@@ -11,6 +11,6 @@ export default defineConfig({
     }
   },
   server: {
-    host: "almoxarifado-frontend-production.up.railway.app"
+    host: "0.0.0.0"
   }
 })
