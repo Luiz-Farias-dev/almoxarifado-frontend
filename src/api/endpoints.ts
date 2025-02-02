@@ -1,0 +1,125 @@
+import api from "./axios";
+
+export const login = async (cpf: string) => {
+  const response = await api.post("/login/", { cpf });
+  return response;
+};
+
+// Adicionar arquivo com vários produtos
+export const addProductsFile = async (file: FormData) => {
+  const response = await api.post("/upload-produtos-catalogo/", file, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
+// Adicionar produto unitário
+export const addProduct = async (data: any) => {
+  const response = await api.post("/upload-produto-catalogo/", data);
+  return response.data;
+};
+// Buscar todos os produtos
+interface GetProductsParams {
+  skip?: number;
+  limit?: number;
+  nome_produto?: string;
+  codigo_produto?: string;
+  centro_custo?: string;
+}
+export const getProducts = async (params: GetProductsParams) =>  {
+  const response = await api.get("/catalogo-produtos/", {
+    params,
+  });
+  return response.data;
+};
+
+// Lista de Espera
+interface WaitingListProps {
+  nome_funcionario_1?: string;
+  destino: string;
+  produtos: {
+    codigo_produto: string;
+    nome_produto: string;
+    centro_custo: string;
+    quantidade: number;
+    unidade: string | null;
+  }[];
+}
+export const addProductToWaitingList = async (data: WaitingListProps) => {
+  const response = await api.post("/lista-espera/", data);
+  return response.data;
+};
+
+interface GetWaitingListParams {
+  skip?: number;
+  limit?: number;
+  codigo_pedido?: string;
+  destino?: string;
+  nome_produto?: string;
+  centro_custo?: string;
+}
+export const getWaitingList = async (params: GetWaitingListParams) => {
+  const response = await api.get("/lista-espera/", {
+    params,
+  });
+  return response.data;
+};
+
+// Remove produto da lista de espera
+export const removeProductFromWaitingList = async (codigo_pedido: string, codigo_produto: string, centro_custo: string) => {
+  const response = await api.delete(`/lista-espera/${codigo_pedido}/${codigo_produto}/${centro_custo}`);
+  return response.data;
+};
+
+// Tabela Final
+interface FinalTableProps {
+  matricula: string;
+  cpf: string;
+  produtos: {
+    codigo_pedido: string;
+    codigo_produto: string;
+    nome_produto: string;
+    centro_custo: string;
+    quantidade: number;
+    nome_funcionario_1: string;
+    unidade: string | null;
+    destino: string;
+  }[];
+}
+export const addProductToFinalTable = async (data: FinalTableProps) => {
+  const response = await api.post("/tabela-final/", data);
+  return response.data;
+}
+
+// Chegada Produtos
+interface ArrivalProductstProps {
+  nome_funcionario?: string;
+  observacao?: string | null;
+  produtos: {
+    codigo_produto: string;
+    nome_produto: string;
+    centro_custo: string;
+    quantidade: number;
+    unidade: string | null;
+  }[];
+}
+export const addProductToArrivalProducts = async (data: ArrivalProductstProps) => {
+  const response = await api.post("/chegada-produtos/", data);
+  return response.data;
+}
+
+// Gerar Relatório
+export const generateReport = async (data: string, tabela: string) => {
+  const response = await api.get("/gerar-relatorio/", {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    params: {
+      data,
+      tabela,
+    },
+    responseType: "blob",
+  });
+  return response;
+}

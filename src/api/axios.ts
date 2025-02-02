@@ -1,0 +1,118 @@
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: "http://localhost:8000",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Interceptor de request: adiciona Access Token no header
+api.interceptors.request.use(
+  (config: any) => {
+    const token = localStorage.getItem("accessToken");
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Variáveis de controle
+let isRefreshing = false;
+let failedRequestsQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+}> = [];
+
+// Interceptor de resposta: tenta refresh em caso de 401
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Se 401 e não foi tentado "retry" ainda
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      // Se já estiver em processo de refresh, empilha as requisições
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedRequestsQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            // Usa o novo token para refazer a request
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+            }
+            return axios(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      // Se não estiver em refresh, dispara o refresh
+      isRefreshing = true;
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (!refreshToken) {
+        // Sem refresh token, desloga
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/almoxarifado/login";
+        return Promise.reject(error);
+      }
+
+      try {
+        // Chama o endpoint /refresh-token mandando o refresh token no header:
+        const refreshResponse = await axios.post(
+          "http://localhost:8000/refresh-token/",
+          {},
+          {
+            headers: {
+              "x-refresh-token": refreshToken,
+            },
+          }
+        );
+
+        const { access_token, refresh_token: newRefreshToken } = refreshResponse.data;
+
+        // Atualiza no localStorage
+        localStorage.setItem("accessToken", access_token);
+        localStorage.setItem("refreshToken", newRefreshToken);
+
+        // Resolve as requisições que estavam na fila
+        failedRequestsQueue.forEach((req) => {
+          req.resolve(access_token);
+        });
+        failedRequestsQueue = [];
+
+        // Refaz a requisição original com o novo token
+        originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        return axios(originalRequest);
+
+      } catch (err) {
+        // Se deu erro no refresh, desloga
+        failedRequestsQueue.forEach((req) => {
+          req.reject(err);
+        });
+        failedRequestsQueue = [];
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/almoxarifado/login";
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export default api;
