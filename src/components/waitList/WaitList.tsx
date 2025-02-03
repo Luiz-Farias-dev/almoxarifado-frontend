@@ -56,7 +56,10 @@ export type Produto = {
   data_att: string;
 };
 
-export const columns = (setData: React.Dispatch<React.SetStateAction<Produto[]>>): ColumnDef<Produto>[] => [
+export const columns = (
+  setData: React.Dispatch<React.SetStateAction<Produto[]>>,
+  setRowSelection: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>
+): ColumnDef<Produto>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -139,18 +142,24 @@ export const columns = (setData: React.Dispatch<React.SetStateAction<Produto[]>>
         const codigoPedido = row.getValue("codigo_pedido") as string;
         const codigoProduto = row.getValue("codigo_produto") as string;
         const centroCusto = row.getValue("centro_custo") as string;
+        const id = row.original.id;
   
         try {
           setIsDeleting(true);
           await removeProductFromWaitingList(codigoPedido, codigoProduto, centroCusto);
             setData((prevData) =>
-            prevData.filter(
-              (produto: Produto) =>
-              produto.codigo_pedido !== codigoPedido ||
-              produto.codigo_produto !== codigoProduto ||
-              produto.centro_custo !== centroCusto
-            )
+              prevData.filter(
+                (produto: Produto) =>
+                produto.codigo_pedido !== codigoPedido ||
+                produto.codigo_produto !== codigoProduto ||
+                produto.centro_custo !== centroCusto
+              )
             );
+            setRowSelection((prev) => {
+              const updated = { ...prev };
+              delete updated[id.toString()];
+              return updated;
+            });
         } catch (error) {
           console.error("Erro ao excluir o produto:", error);
         } finally {
@@ -224,9 +233,7 @@ export function WaitListPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState<{ [key: string]: boolean }>(
-    {}
-  );
+  const [rowSelection, setRowSelection] = useState<{ [key: string]: boolean }>({});
   const [selectedProducts, setSelectedProducts] = useState<
     {
       id: number;
@@ -379,7 +386,7 @@ export function WaitListPage() {
 
   const table = useReactTable({
     data,
-    columns: columns(setData),
+    columns: columns(setData, setRowSelection),
     getRowId: (row) => String(row.id),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
