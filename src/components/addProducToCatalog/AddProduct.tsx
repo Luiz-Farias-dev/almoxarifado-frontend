@@ -62,7 +62,7 @@ const AddProductPage = () => {
       setFile(null);
     } catch (error: any) {
       console.error("Erro ao enviar arquivo de produtos:", error);
-      if (error.response.status === 400 && error.response.data.detail === "A planilha deve conter as colunas: Código Produto ou Material, Nome Produto ou Especificação e Centro de Custo") {
+      if (error.response.status === 400 && error.response.data.detail === "A planilha deve conter as colunas: Código Produto/Material, Nome Produto/Especificação e Centro de Custo") {
         handleWarningToast("A planilha deve conter as colunas: 'Código Produto ou Material', 'Nome Produto ou Especificação' e 'Centro de Custo'");
         return;
       }
