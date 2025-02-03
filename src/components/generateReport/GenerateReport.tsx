@@ -1,26 +1,51 @@
+import { useState } from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { useToast } from "@/hooks/use-toast"
+import { addDays, format, isAfter } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { DateRange } from "react-day-picker";
+import { Calendar } from "@/components/ui/calendar";
+import { useToast } from "@/hooks/use-toast";
 import Header from "../Header";
 import { generateReport } from "@/api/endpoints";
 
 const GenerateReportPage = () => {
   const { toast } = useToast();
+  const [dataChegada, setDataChegada] = useState<DateRange | undefined>({
+    from: new Date(),
+    to: addDays(new Date(), 0),
+  });
+  const [dataSaida, setDataSaida] = useState<DateRange | undefined>({
+    from: new Date(),
+    to: addDays(new Date(), 0),
+  });
+
   const handleGenerateReport = async (reportType: string) => {
     try {
-      const date = new Date().toLocaleDateString("pt-BR").split("/").reverse().join("-");
-      const response = await generateReport(date, reportType);
+      let dateFrom, dateTo;
 
+      if (reportType === "produtos_chegada") {
+        dateFrom = dataChegada?.from;
+        dateTo = dataChegada?.to || dateFrom;
+      } else if (reportType === "produtos_saida") {
+        dateFrom = dataSaida?.from;
+        dateTo = dataSaida?.to || dateFrom;
+      }
+  
+      const formattedFrom = format(dateFrom!, "yyyy-MM-dd");
+      const formattedTo = format(dateTo!, "yyyy-MM-dd");
+      
+      const response = await generateReport(formattedFrom, formattedTo, reportType);
       const contentType = response.headers["content-type"];
       const blob = new Blob([response.data], { type: contentType });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${reportType}_${date}.xlsx`;
+      a.download = `${reportType}_${formattedFrom}_a_${formattedTo}.xlsx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -35,6 +60,10 @@ const GenerateReportPage = () => {
     }
   };
 
+  const isDateDisabled = (day: Date) => {
+    return isAfter(day, new Date()); // Desabilita dias após hoje
+  };
+
   const handleSuccessToast = () => {
     toast({
       variant: "success",
@@ -46,7 +75,7 @@ const GenerateReportPage = () => {
     toast({
       variant: "warning",
       title: "Aviso",
-      description: "Não há produtos para gerar relatório de hoje.",
+      description: "Não há produtos para gerar relatório nas datas selecionadas.",
     });
   };
   const handleFailToast = () => {
@@ -69,22 +98,70 @@ const GenerateReportPage = () => {
             <AccordionItem value="item-1">
               <AccordionTrigger>Relatório Planilha de Chegada</AccordionTrigger>
               <AccordionContent>
+                <div className="mb-2 text-sm text-gray-600 font-medium">Selecione um data ou um período para gerar o relatório</div>
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={dataChegada?.from}
+                  selected={dataChegada}
+                  onSelect={setDataChegada}
+                  disabled={isDateDisabled}
+                />
                 <button
                   onClick={() => handleGenerateReport("produtos_chegada")}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-2xl shadow hover:bg-blue-700"
+                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-2xl shadow hover:bg-blue-700"
                 >
-                  Gerar Relatório de Hoje
+                  {dataChegada?.from ? (
+                    dataChegada.to ? (
+                      <>
+                        Gerar relatório dos dias{" "}
+                        {format(dataChegada.from, "dd/MM/yyyy", {locale: ptBR})} a{" "}
+                        {format(dataChegada.to, "dd/MM/yyyy", {locale: ptBR})}
+                      </>
+                    ) : (
+                      <>
+                        Gerar relatório do dia{" "}
+                        {format(dataChegada.from, "dd/MM/yyyy", {locale: ptBR})}
+                      </>
+                    )
+                  ) : (
+                    <span>Selecione uma data</span>
+                  )}
                 </button>
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2">
               <AccordionTrigger>Relatório Planilha de Saída</AccordionTrigger>
               <AccordionContent>
+                <div className="mb-2 text-sm text-gray-600 font-medium">Selecione um data ou um período para gerar o relatório</div>
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={dataSaida?.from}
+                  selected={dataSaida}
+                  onSelect={setDataSaida}
+                  disabled={isDateDisabled}
+                />
                 <button
                   onClick={() => handleGenerateReport("produtos_saida")}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-2xl shadow hover:bg-purple-700 transition-colors"
+                  className="mt-2 px-4 py-2 bg-purple-600 text-white rounded-2xl shadow hover:bg-purple-700 transition-colors"
                 >
-                  Gerar Relatório de Hoje
+                  {dataSaida?.from ? (
+                    dataSaida.to ? (
+                      <>
+                        Gerar relatório dos dias{" "}
+                        {format(dataSaida.from, "dd/MM/yyyy", {locale: ptBR})} a{" "}
+                        {format(dataSaida.to, "dd/MM/yyyy", {locale: ptBR})}
+                      </>
+                    ) : (
+                      <>
+                        Gerar relatório do dia{" "}
+                        {format(dataSaida.from, "dd/MM/yyyy", {locale: ptBR})}
+                      </>
+                    )
+                  ) : (
+                    <span>Selecione uma data</span>
+                  )}
                 </button>
               </AccordionContent>
             </AccordionItem>
