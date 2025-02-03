@@ -110,13 +110,14 @@ export const addProductToArrivalProducts = async (data: ArrivalProductstProps) =
 }
 
 // Gerar Relatório
-export const generateReport = async (data: string, tabela: string) => {
+export const generateReport = async (data_inicio: string, data_fim: string, tabela: string) => {
   const response = await api.get("/gerar-relatorio/", {
     headers: {
       "Content-Type": "application/json",
     },
     params: {
-      data,
+      data_inicio,
+      data_fim,
       tabela,
     },
     responseType: "blob",
