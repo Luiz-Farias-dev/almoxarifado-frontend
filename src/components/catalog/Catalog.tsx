@@ -29,6 +29,7 @@ export type Produto = {
   id: number;
   codigo_produto: string;
   nome_produto: string;
+  unidade: string | null;
   centro_custo: string;
   data_att: string;
 };
@@ -65,6 +66,11 @@ export const columns: ColumnDef<Produto>[] = [
     accessorKey: "nome_produto",
     header: "Nome do Produto",
     cell: ({ row }) => <div>{row.getValue("nome_produto")}</div>,
+  },
+  {
+    accessorKey: "unidade",
+    header: "Unidade",
+    cell: ({ row }) => <div>{row.getValue("unidade")}</div>,
   },
   {
     accessorKey: "centro_custo",
@@ -220,7 +226,7 @@ export function CatalogPage() {
       .filter((produto) => selectedIds.includes(produto.id))
       .map((produto) => {
         const existing = stillSelected.find((p) => p.id === produto.id);
-        return existing ? existing : { ...produto, quantidade: 0, unidade: "" };
+        return existing ? existing : { ...produto, quantidade: 0 };
       });
   
     // Unificamos ambas as listas (removidos + adicionados)
