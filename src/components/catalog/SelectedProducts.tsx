@@ -2,7 +2,6 @@ import { Dispatch, SetStateAction, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Copy, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { ComboboxPopover } from "../UnitPopup";
 import LoadingSpinner from "../LoadingSpinner";
 import { addProductToWaitingList } from "@/api/endpoints";
 import { getNameFromToken } from "@/utils/tokenUtils";
@@ -39,12 +38,12 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
 
   const handleInputChange = (
     id: number,
-    field: "quantidade" | "unidade",
+    field: "quantidade",
     value: string | number
   ) => {
     setSelectedProducts((prev) =>
       prev.map((product) =>
-        product.id === id ? { ...product, [field]: value } : product
+        product.id === id ? { ...product, [field]: typeof value === 'string' ? parseInt(value, 10) : value } : product
       )
     );
   };
@@ -65,7 +64,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         nome_produto: product.nome_produto,
         centro_custo: product.centro_custo,
         quantidade: product.quantidade,
-        unidade: product.unidade === "" ? null : product.unidade,
+        unidade: product.unidade,
       })),
     };
 
@@ -124,7 +123,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         {selectedProducts.map((product) => (
           <div
             key={product.id}
-            className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-center mb-4 border-b pb-2 relative"
+            className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-center mb-3 border-b pb-2 relative"
           >
             {/* Código do produto */}
             <div>
@@ -140,6 +139,13 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               </label>
               <div className="mt-1 text-gray-900">{product.nome_produto}</div>
             </div>
+            {/* Unidade */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Unidade
+              </label>
+              <div className="mt-1 text-gray-900">{product.unidade || "-"}</div>
+            </div>
             {/* Centro de Custo */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -152,29 +158,21 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               <label className="block text-sm font-medium text-gray-700">
                 Quantidade
               </label>
-              <Input
-                type="number"
-                value={product.quantidade}
-                placeholder="Quantidade"
-                onChange={(e) =>
-                  handleInputChange(product.id, "quantidade", parseInt(e.target.value))
-                }
-                className="mt-1 rounded-2xl"
-              />
-            </div>
-            {/* Unidade */}
-            <div className="flex flex-col items-start">
-              <label className="block text-sm font-medium text-gray-700">
-                Unidade (opcional)
-              </label>
               <div className="flex flex-row items-center">
-                <ComboboxPopover onSelect={(value) => handleInputChange(product.id, "unidade", value)}/>
-                {/* Botão de remover */}
+                <Input
+                  type="number"
+                  value={product.quantidade}
+                  placeholder="Quantidade"
+                  onChange={(e) =>
+                    handleInputChange(product.id, "quantidade", parseInt(e.target.value))
+                  }
+                  className="mt-1 rounded-2xl"
+                />
                 <button
-                  className="pl-2 mr-1 text-black hover:text-gray-800 transition"
-                  onClick={() => handleRemove(product.id)}
-                  aria-label={`Remover ${product.nome_produto}`}
-                >
+                    className="pl-2 mr-1 text-black hover:text-gray-800 transition"
+                    onClick={() => handleRemove(product.id)}
+                    aria-label={`Remover ${product.nome_produto}`}
+                  >
                   <X size={20} />
                 </button>
               </div>

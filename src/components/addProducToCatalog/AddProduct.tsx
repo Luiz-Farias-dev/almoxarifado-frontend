@@ -62,7 +62,7 @@ const AddProductPage = () => {
       setFile(null);
     } catch (error: any) {
       console.error("Erro ao enviar arquivo de produtos:", error);
-      if (error.response.status === 400 && error.response.data.detail === "A planilha deve conter as colunas: Código Produto ou Material, Nome Produto ou Especificação e Centro de Custo") {
+      if (error.response.status === 400 && error.response.data.detail === "A planilha deve conter as colunas: Código Produto/Material, Nome Produto/Especificação e Centro de Custo") {
         handleWarningToast("A planilha deve conter as colunas: 'Código Produto ou Material', 'Nome Produto ou Especificação' e 'Centro de Custo'");
         return;
       }
@@ -191,8 +191,8 @@ const AddProductPage = () => {
             <div className="space-y-4">
               <div>
                 <p className="text-xs text-gray-500 mb-4">
-                  A planilha deve conter, pelo menos, três colunas seguindo o
-                  formato de nome "Código Produto ou Material", "Nome Produto ou Especificação" e "Centro de Custo".
+                  A planilha deve conter, pelo menos, quatro colunas seguindo o
+                  formato de nome "Código Produto ou Material", "Nome Produto ou Especificação", "Unidade" e "Centro de Custo".
                 </p>
                 <input
                   type="file"

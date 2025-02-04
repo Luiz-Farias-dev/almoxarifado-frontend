@@ -29,6 +29,7 @@ export type Produto = {
   id: number;
   codigo_produto: string;
   nome_produto: string;
+  unidade: string | null;
   centro_custo: string;
   data_att: string;
 };
@@ -67,6 +68,11 @@ export const columns: ColumnDef<Produto>[] = [
     cell: ({ row }) => <div>{row.getValue("nome_produto")}</div>,
   },
   {
+    accessorKey: "unidade",
+    header: "Unidade",
+    cell: ({ row }) => <div>{row.getValue("unidade")}</div>,
+  },
+  {
     accessorKey: "centro_custo",
     header: "Centro de Custo",
     cell: ({ row }) => <div>{row.getValue("centro_custo")}</div>,
@@ -95,9 +101,7 @@ export function ArrivalProductsPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState<{ [key: string]: boolean }>(
-    {}
-  );
+  const [rowSelection, setRowSelection] = useState<{ [key: string]: boolean }>({});
   const [selectedProducts, setSelectedProducts] = useState<
     {
       id: number;
@@ -218,7 +222,7 @@ export function ArrivalProductsPage() {
       .filter((produto) => selectedIds.includes(produto.id))
       .map((produto) => {
         const existing = stillSelected.find((p) => p.id === produto.id);
-        return existing ? existing : { ...produto, quantidade: 0, unidade: "" };
+        return existing ? existing : { ...produto, quantidade: 0 };
       });
   
     // Unificamos ambas as listas (removidos + adicionados)
