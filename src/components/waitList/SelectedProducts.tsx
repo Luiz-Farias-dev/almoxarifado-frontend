@@ -154,7 +154,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               <label className="block text-sm font-medium text-gray-700">
                 Unidade
               </label>
-              <div className="mt-1 text-gray-900">{product.unidade ? product.unidade : "Nenhuma"}</div>
+              <div className="mt-1 text-gray-900">{product.unidade ? product.unidade : "-"}</div>
             </div>
             {/* Nome do funcionário */}
             <div className="flex flex-col">
