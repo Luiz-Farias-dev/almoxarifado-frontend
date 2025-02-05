@@ -6,7 +6,6 @@ import { ArrivalProductsPage } from "./components/arrivalProducts/ArrivalProduct
 import { CatalogPage } from "./components/catalog/Catalog"
 import { WaitListPage } from "./components/waitList/WaitList";
 import GenerateReportPage from "./components/generateReport/GenerateReport";
-import MainPage from "./components/MainPage";
 import HomePage from "./components/Home";
 import NotFoundPage from "./components/NotFoundPage";
 import LoginPage from "./components/Login";
@@ -19,39 +18,35 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Rota para página inicial */}
-        <Route path="/" element={<MainPage />} />
         {/* Rota para login */}
-        <Route path="/almoxarifado/login" element={<LoginPage />} />
-        {/* Rota privada para produtos */}
         <Route path="/login" element={<LoginPage />} />
         {/* Rotas protegidas */}
         <Route
-          path="/almoxarifado"
+          path="/"
           element={<PrivateRoute element={<HomePage />} />}
         />
         <Route
-          path="/almoxarifado/cadastrar-funcionario"
+          path="/cadastrar-funcionario"
           element={<PrivateRoute element={<AddEmployeePage />} />}
         />
         <Route
-          path="/almoxarifado/adicionar-produto"
+          path="/adicionar-produto"
           element={<PrivateRoute element={<AddProductPage />} />}
         />
         <Route
-          path="/almoxarifado/catalogo"
+          path="/catalogo"
           element={<PrivateRoute element={<CatalogPage />} />}
         />
         <Route
-          path="/almoxarifado/lista-espera"
+          path="/lista-espera"
           element={<PrivateRoute element={<WaitListPage />} />}
         />
         <Route
-          path="/almoxarifado/chegada-produtos"
+          path="/chegada-produtos"
           element={<PrivateRoute element={<ArrivalProductsPage />} />}
         />
         <Route
-          path="/almoxarifado/gerar-relatorio"
+          path="/gerar-relatorio"
           element={<PrivateRoute element={<GenerateReportPage />} />}
         />
         {/* Rota para página não encontrada */}

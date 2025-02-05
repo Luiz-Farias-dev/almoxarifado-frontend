@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { addEmployee } from "@/api/endpoints";
+import { isValidCPF, formatCPF } from "@/utils/validateCpf";
 import { DropdownMenuRadioEmployeeType } from "./EmployeeTypeMenu";
 import LoadingSpinner from "../LoadingSpinner";
 import Header from "../Header";
 
 const AddEmployeePage = () => {
   const { toast } = useToast();
+  const [cpfError, setCpfError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     nome: "",
     matricula: "",
@@ -41,6 +43,15 @@ const AddEmployeePage = () => {
       handleFailToast("Erro ao cadastrar funcionário.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCpfChange = (value: string) => {
+    setFormData({ ...formData, cpf: value });
+    if (value && !isValidCPF(value)) {
+      setCpfError("CPF inválido. Verifique e tente novamente.");
+    } else {
+      setCpfError(null);
     }
   };
 
@@ -108,11 +119,12 @@ const AddEmployeePage = () => {
                 id="cpf"
                 name="cpf"
                 value={formData.cpf}
-                onChange={handleChange}
+                onChange={(e) => handleCpfChange(formatCPF(e.target.value))}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Informe o CPF"
                 required
               />
+              {cpfError && <p className="text-red-500 text-sm mt-1">{cpfError}</p>}
             </div>
             <div>
               <label htmlFor="tipo_funcionario" className="block text-sm font-medium text-gray-700">
