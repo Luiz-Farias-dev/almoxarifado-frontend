@@ -52,6 +52,7 @@ function LoginPage() {
             Matrícula
           </label>
           <input
+            autoComplete="one-time-code"
             type="text"
             id="matricula"
             placeholder="Digite sua matrícula"
@@ -63,6 +64,7 @@ function LoginPage() {
             CPF
           </label>
           <input
+            autoComplete="one-time-code"
             type="text"
             id="cpf"
             placeholder="Digite seu CPF"
