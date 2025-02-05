@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster"
 import AddProductPage from "./components/addProducToCatalog/AddProduct";
+import AddEmployeePage from "./components/addEmployee/AddEmployee";
 import { ArrivalProductsPage } from "./components/arrivalProducts/ArrivalProducts";
 import { CatalogPage } from "./components/catalog/Catalog"
 import { WaitListPage } from "./components/waitList/WaitList";
@@ -30,7 +31,11 @@ function App() {
           element={<PrivateRoute element={<HomePage />} />}
         />
         <Route
-          path="/almoxarifado/adicionar"
+          path="/almoxarifado/cadastrar-funcionario"
+          element={<PrivateRoute element={<AddEmployeePage />} />}
+        />
+        <Route
+          path="/almoxarifado/adicionar-produto"
           element={<PrivateRoute element={<AddProductPage />} />}
         />
         <Route

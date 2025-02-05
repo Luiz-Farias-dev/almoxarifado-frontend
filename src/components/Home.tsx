@@ -1,6 +1,6 @@
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
-import { PlusCircle, PackagePlus, Box, List, FileText } from "lucide-react";
+import { PlusCircle, CircleUserRound , PackagePlus, Box, List, FileText } from "lucide-react";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -15,7 +15,14 @@ const HomePage = () => {
 
           <div className="flex flex-col gap-4">
             <button
-              onClick={() => navigate("adicionar")}
+              onClick={() => navigate("cadastrar-funcionario")}
+              className="w-full px-4 py-2 flex items-center gap-2 text-white bg-gray-500 hover:bg-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transform transition-transform duration-200 hover:scale-105"
+            >
+              <CircleUserRound className="w-5 h-5" />
+              Cadastrar Funcionário
+            </button>
+            <button
+              onClick={() => navigate("adicionar-produto")}
               className="w-full px-4 py-2 flex items-center gap-2 text-white bg-blue-500 hover:bg-blue-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 transform transition-transform duration-200 hover:scale-105"
             >
               <PlusCircle className="w-5 h-5" />

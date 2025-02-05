@@ -5,6 +5,12 @@ export const login = async (matricula: string, cpf: string) => {
   return response;
 };
 
+// Adicionar funcionário
+export const addEmployee = async (data: any) => {
+  const response = await api.post("/upload-funcionario/", data);
+  return response.data;
+};
+
 // Adicionar arquivo com vários produtos
 export const addProductsFile = async (file: FormData) => {
   const response = await api.post("/upload-produtos-catalogo/", file, {
