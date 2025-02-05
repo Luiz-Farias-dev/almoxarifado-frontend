@@ -190,9 +190,9 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
             </label>
             <Input
               type="text"
-              value={nome || undefined}
+              value={nome || ""}
               placeholder="Digite seu nome"
-              onChange={(e) => setNome(e.target.value)}
+              readOnly
               className="mt-1 rounded-2xl"
             />
           </div>
