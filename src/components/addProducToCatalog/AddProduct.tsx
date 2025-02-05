@@ -9,6 +9,7 @@ const AddProductPage = () => {
   const [formData, setFormData] = useState({
     codigo_produto: "",
     nome_produto: "",
+    unidade: "",
     centro_custo: "",
   });
   const [file, setFile] = useState<File | null>(null);
@@ -31,10 +32,11 @@ const AddProductPage = () => {
       await addProduct({
         nome_produto: formData.nome_produto,
         codigo_produto: formData.codigo_produto,
+        unidade: formData.unidade,
         centro_custo: formData.centro_custo,
       });
       handleSuccessToast("Produto adicionado com sucesso!");
-      setFormData({ nome_produto: "", codigo_produto: "", centro_custo: "" });
+      setFormData({ nome_produto: "", codigo_produto: "", unidade: "", centro_custo: "" });
     } catch (error: any) {
       if (error.response && error.response.status === 400) {
         handleWarningToast("Produto já cadastrado.");
@@ -142,6 +144,23 @@ const AddProductPage = () => {
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Informe o código do produto"
                 required
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="unidade"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Unidade de Medida (Opcional)
+              </label>
+              <input
+                type="text"
+                id="unidade"
+                name="unidade"
+                value={formData.unidade}
+                onChange={handleChange}
+                className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Informe a unidade"
               />
             </div>
             <div>
