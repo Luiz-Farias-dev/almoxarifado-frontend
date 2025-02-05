@@ -25,13 +25,13 @@ const Header = (header: { title?: string }) => {
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
-    navigate("/almoxarifado/login");
+    navigate("/login");
   };
 
   return (
     <header className="flex justify-between items-center pt-2 pr-3">
       <button
-        onClick={() => navigate("/almoxarifado")}
+        onClick={() => navigate("/")}
         className="flex items-center text-gray-600 hover:text-gray-800 transition relative group"  
       >
         <Home size={24} />

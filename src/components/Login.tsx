@@ -19,7 +19,7 @@ function LoginPage() {
       const { access_token, refresh_token } = response.data;
       localStorage.setItem("accessToken", access_token);
       localStorage.setItem("refreshToken", refresh_token);
-      navigate("/almoxarifado/");
+      navigate("/");
     } catch (error: any) {
       setLoginError(error.response?.data?.detail || "Erro ao validar matrícula e CPF.");
     } finally {
