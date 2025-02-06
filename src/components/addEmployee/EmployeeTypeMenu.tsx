@@ -19,6 +19,7 @@ export function DropdownMenuRadioEmployeeType({ position, setPosition }: { posit
         <DropdownMenuRadioGroup value={position} onValueChange={setPosition}>
           <DropdownMenuRadioItem value="Interno">Interno</DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="Externo">Externo</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="Administrador">Administrador</DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
