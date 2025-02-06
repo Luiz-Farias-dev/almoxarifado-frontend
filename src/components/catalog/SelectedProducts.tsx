@@ -227,7 +227,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
             )}
           </button>
           <button
-            onClick={() => navigate("/almoxarifado/lista-espera")}
+            onClick={() => navigate("/lista-espera")}
             className="w-full sm:w-auto px-4 py-2 rounded-2xl text-yellow-500 border border-yellow-500 hover:bg-yellow-500 hover:text-white transition"
           >
             Ir para Lista de Espera
