@@ -21,6 +21,10 @@ function LoginPage() {
       localStorage.setItem("refreshToken", refresh_token);
       navigate("/");
     } catch (error: any) {
+      if (error.response?.status === 403) {
+        setLoginError(error.response?.data?.detail || "Apenas administradores podem acessar o sistema.");
+        return
+      };
       setLoginError(error.response?.data?.detail || "Erro ao validar matrícula e CPF.");
     } finally {
       setLoading(false);
