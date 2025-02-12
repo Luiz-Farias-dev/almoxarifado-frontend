@@ -259,6 +259,7 @@ export function ArrivalProductsPage() {
     <div className="w-full px-5">
       <Header title="Adicionar produtos a lista de chegada" />
       <div className="flex flex-col sm:flex-row items-center py-4 gap-4">
+
         {/* Filtro por nome */}
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -270,6 +271,11 @@ export function ArrivalProductsPage() {
                 placeholder="Digite o nome do produto"
                 value={filterNome}
                 onChange={(event) => setFilterNome(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    handleSearchByName();
+                  }
+                }}
                 className="rounded-2xl w-full pr-10"
               />
               {filterNome !== "" && (
@@ -303,6 +309,11 @@ export function ArrivalProductsPage() {
                 placeholder="Digite o código do produto"
                 value={filterCodigo}
                 onChange={(event) => setFilterCodigo(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    handleSearchByCode();
+                  }
+                }}
                 className="rounded-2xl w-full pr-10"
               />
               {filterCodigo !== "" && (
@@ -336,6 +347,11 @@ export function ArrivalProductsPage() {
                 placeholder="Digite o centro de custo"
                 value={filterCentroCusto}
                 onChange={(event) => setFilterCentroCusto(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    handleSearchByCentroCusto();
+                  }
+                }}
                 className="rounded-2xl w-full pr-10"
               />
               {filterCentroCusto !== "" && (
