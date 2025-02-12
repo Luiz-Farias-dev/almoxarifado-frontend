@@ -1,5 +1,6 @@
-import { Dispatch, SetStateAction, useState } from "react";
-import { X } from "lucide-react";
+import { Dispatch, SetStateAction, useState, useRef, useEffect } from "react";
+import { X, Camera } from "lucide-react";
+import jsQR from "jsqr";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast"
 import LoadingSpinner from "../LoadingSpinner";
@@ -28,6 +29,8 @@ type SelectedProductsProps = {
 export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemoveProduct, onSendProductsSuccess }: SelectedProductsProps) => {
   const { toast } = useToast();
   const [matricula, setMatricula] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [cpf, setCpf] = useState("");
   const [cpfError, setCpfError] = useState<string | null>(null);
   const [loadingSendProducts, setLoadingSendProducts] = useState(false);
@@ -101,6 +104,67 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
   };
 
   const isSendButtonDisabled = !(matricula && cpf && !cpfError);
+
+  const handleOpenScanner = () => {
+    setShowScanner(true);
+  };
+
+  useEffect(() => {
+    if (!showScanner) return;
+  
+    let stream: MediaStream;
+    const video = videoRef.current;
+  
+    const scanFrame = () => {
+      if (video?.readyState === video?.HAVE_ENOUGH_DATA) {
+        const canvas = document.createElement('canvas');
+        if (video) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+        }
+        const context = canvas.getContext('2d');
+        
+        if (context) {
+          if (video) {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          }
+          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          
+          if (code) {
+            handleCpfChange(code.data);
+            setShowScanner(false);
+          }
+        }
+      }
+      if (showScanner) {
+        requestAnimationFrame(scanFrame);
+      }
+    };
+  
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+      .then((mediaStream) => {
+        stream = mediaStream;
+        if (video) {
+          video.srcObject = mediaStream;
+          video.play().then(() => requestAnimationFrame(scanFrame));
+        }
+      })
+      .catch((error) => {
+        console.error("Erro ao acessar câmera:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Permissão para usar a câmera é necessária para escanear QR codes",
+        });
+      });
+  
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [showScanner]);
 
   return (
     <div className="mt-4 border-t p-4">
@@ -183,7 +247,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         ))}
       </div>
 
-      {/* Campos de Nome e Destino */}
+      {/* Campos de Matrícula e Cpf */}
       <div className="mt-4 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -198,17 +262,26 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               className="mt-1 rounded-2xl"
             />
           </div>
-          <div>
+          <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700">
               CPF
             </label>
-            <Input
-              type="password"
-              value={cpf}
-              placeholder="Digite o CPF"
-              onChange={(e) => handleCpfChange(e.target.value)}
-              className="mt-1 rounded-2xl border-gray-300"
-            />
+            <div className="relative">
+              <Input
+                type="text"
+                value={cpf}
+                placeholder="Digite o CPF ou escaneie o QR Code"
+                onChange={(e) => handleCpfChange(e.target.value)}
+                className="mt-1 rounded-2xl border-gray-300 pr-10"
+              />
+              <button
+                type="button"
+                onClick={handleOpenScanner}
+                className="absolute right-2 top-2 p-1 hover:bg-gray-100 rounded-full"
+              >
+                <Camera className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
             {cpfError && <p className="text-red-500 text-sm mt-1">{cpfError}</p>}
           </div>
         </div>
@@ -229,6 +302,26 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
           )}
         </button>
       </div>
+      {showScanner && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg max-w-md w-full">
+            <video 
+              ref={videoRef}
+              className="w-full rounded-lg"
+              playsInline
+            />
+            <p className="text-center text-gray-600 text-sm mt-2">
+              Escaneie o QR Code do CPF, assim que o código for lido a câmera será fechada.
+            </p>
+            <button
+              onClick={() => setShowScanner(false)}
+              className="mt-4 w-full px-4 py-2 bg-red-500 text-white rounded-2xl hover:bg-red-600"
+            >
+              Fechar Câmera
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
