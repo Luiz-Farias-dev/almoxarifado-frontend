@@ -1,5 +1,4 @@
 import { Dispatch, SetStateAction, useState, useRef, useEffect } from "react";
-import { useLocation } from "react-router-dom";
 import { X, Camera } from "lucide-react";
 import jsQR from "jsqr";
 import { Input } from "@/components/ui/input";
@@ -29,7 +28,6 @@ type SelectedProductsProps = {
 
 export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemoveProduct, onSendProductsSuccess }: SelectedProductsProps) => {
   const { toast } = useToast();
-  const location = useLocation();
   const [matricula, setMatricula] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -112,11 +110,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
   };
 
   useEffect(() => {
-    setCpf("");
-    setShowScanner(false);
-  }, [location.pathname]);
-
-  useEffect(() => {
     if (!showScanner) return;
   
     let stream: MediaStream;
@@ -175,9 +168,12 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
 
   return (
     <div className="mt-4 border-t p-4">
-      <h2 className="font-semibold text-lg mb-3 text-center sm:text-left">
+      <h2 className="font-semibold text-lg mb-1 text-center sm:text-left">
         Produtos Selecionados
       </h2>
+      <p className="text-sm text-gray-500 mb-2">
+        Obs: Caso queira validar por meio do QR Code e o ícone de câmera não esteja aparecendo, recarregue a página.
+      </p>
       {/* Área rolável para os produtos */}
       <div className="max-h-60 overflow-y-auto border rounded-2xl p-2">
         {selectedProducts.map((product) => (
@@ -275,7 +271,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
             </label>
             <div className="relative">
               <Input
-                key={location.pathname}
                 type="password"
                 value={cpf}
                 placeholder="Digite o CPF ou escaneie o QR Code"
@@ -291,9 +286,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               </button>
             </div>
             {cpfError && <p className="text-red-500 text-sm mt-1">{cpfError}</p>}
-            <p className="text-sm text-gray-500 mt-1">
-              Obs: Caso queira validar por meio do QR Code e o ícone de câmera não esteja aparecendo, recarregue a página.
-            </p>
           </div>
         </div>
         {/* Botão de Enviar */}
