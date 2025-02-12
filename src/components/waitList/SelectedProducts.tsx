@@ -112,8 +112,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
   };
 
   useEffect(() => {
-    setShowScanner(false);
-    setCpf("");
+    window.location.reload();
   }, [location.pathname]);
 
   useEffect(() => {
