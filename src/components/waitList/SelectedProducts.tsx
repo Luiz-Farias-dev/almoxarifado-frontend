@@ -29,6 +29,8 @@ type SelectedProductsProps = {
 export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemoveProduct, onSendProductsSuccess }: SelectedProductsProps) => {
   const { toast } = useToast();
   const [matricula, setMatricula] = useState("");
+  const [cameraSupported, setCameraSupported] = useState(true);
+  const streamRef = useRef<MediaStream | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cpf, setCpf] = useState("");
@@ -110,61 +112,99 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
   };
 
   useEffect(() => {
-    if (!showScanner) return;
-  
-    let stream: MediaStream;
-    const video = videoRef.current;
-  
-    const scanFrame = () => {
-      if (video?.readyState === video?.HAVE_ENOUGH_DATA) {
-        const canvas = document.createElement('canvas');
-        if (video) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-        }
-        const context = canvas.getContext('2d');
-        
-        if (context) {
-          if (video) {
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-          }
-          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-          
-          if (code) {
-            handleCpfChange(code.data);
-            setShowScanner(false);
-          }
-        }
+    const checkCameraSupport = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const hasVideoDevice = devices.some(device => device.kind === 'videoinput');
+        setCameraSupported(hasVideoDevice);
+      } catch (error) {
+        setCameraSupported(false);
       }
-      if (showScanner) {
-        requestAnimationFrame(scanFrame);
+    };
+    checkCameraSupport();
+  }, []);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && showScanner) {
+        setShowScanner(false);
       }
     };
   
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-      .then((mediaStream) => {
-        stream = mediaStream;
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [showScanner]);
+
+  useEffect(() => {
+    if (!showScanner || !cameraSupported) return;
+  
+    let animationFrameId: number;
+    const video = videoRef.current;
+  
+    const startScanner = async () => {
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" }
+        });
+        
+        streamRef.current = mediaStream;
+        
         if (video) {
           video.srcObject = mediaStream;
-          video.play().then(() => requestAnimationFrame(scanFrame));
+          await video.play();
+          scanFrame();
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Erro ao acessar câmera:", error);
+        setCameraSupported(false);
         toast({
           variant: "destructive",
           title: "Erro",
           description: "Permissão para usar a câmera é necessária para escanear QR codes",
         });
-      });
-  
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [showScanner]);
+  
+    const scanFrame = () => {
+      if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+        animationFrameId = requestAnimationFrame(scanFrame);
+        return;
+      }
+  
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+  
+      if (context) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+  
+        if (code) {
+          handleCpfChange(code.data);
+          setShowScanner(false);
+        }
+      }
+      animationFrameId = requestAnimationFrame(scanFrame);
+    };
+  
+    startScanner();
+  
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      if (video) {
+        video.srcObject = null;
+      }
+    };
+  }, [showScanner, cameraSupported]);
 
   return (
     <div className="mt-4 border-t p-4">
