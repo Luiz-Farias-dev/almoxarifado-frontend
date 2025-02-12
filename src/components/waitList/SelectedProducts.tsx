@@ -1,4 +1,5 @@
 import { Dispatch, SetStateAction, useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { X, Camera } from "lucide-react";
 import jsQR from "jsqr";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ type SelectedProductsProps = {
 
 export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemoveProduct, onSendProductsSuccess }: SelectedProductsProps) => {
   const { toast } = useToast();
+  const location = useLocation();
   const [matricula, setMatricula] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -108,6 +110,11 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
   const handleOpenScanner = () => {
     setShowScanner(true);
   };
+
+  useEffect(() => {
+    setShowScanner(false);
+    setCpf("");
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!showScanner) return;
