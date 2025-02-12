@@ -268,7 +268,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
             </label>
             <div className="relative">
               <Input
-                type="text"
+                type="password"
                 value={cpf}
                 placeholder="Digite o CPF ou escaneie o QR Code"
                 onChange={(e) => handleCpfChange(e.target.value)}
