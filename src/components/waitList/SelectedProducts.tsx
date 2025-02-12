@@ -112,7 +112,8 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
   };
 
   useEffect(() => {
-    window.location.reload();
+    setCpf("");
+    setShowScanner(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -274,6 +275,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
             </label>
             <div className="relative">
               <Input
+                key={location.pathname}
                 type="password"
                 value={cpf}
                 placeholder="Digite o CPF ou escaneie o QR Code"
