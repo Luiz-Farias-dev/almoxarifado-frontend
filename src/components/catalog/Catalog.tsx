@@ -274,6 +274,11 @@ export function CatalogPage() {
                 placeholder="Digite o nome do produto"
                 value={filterNome}
                 onChange={(event) => setFilterNome(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    handleSearchByName();
+                  }
+                }}
                 className="rounded-2xl w-full pr-10"
               />
               {filterNome !== "" && (
@@ -307,6 +312,11 @@ export function CatalogPage() {
                 placeholder="Digite o código do produto"
                 value={filterCodigo}
                 onChange={(event) => setFilterCodigo(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    handleSearchByCode();
+                  }
+                }}
                 className="rounded-2xl w-full pr-10"
               />
               {filterCodigo !== "" && (
@@ -340,6 +350,11 @@ export function CatalogPage() {
                 placeholder="Digite o centro de custo"
                 value={filterCentroCusto}
                 onChange={(event) => setFilterCentroCusto(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    handleSearchByCentroCusto();
+                  }
+                }}
                 className="rounded-2xl w-full pr-10"
               />
               {filterCentroCusto !== "" && (

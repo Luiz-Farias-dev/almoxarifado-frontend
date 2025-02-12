@@ -407,6 +407,7 @@ export function WaitListPage() {
     <div className="w-full px-5">
       <Header title="Lista de Espera" />
       <div className="flex flex-col sm:flex-row items-center py-4 gap-4">
+
         {/* Filtro por código do pedido */}
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -418,6 +419,11 @@ export function WaitListPage() {
                 placeholder="Digite o código do pedido"
                 value={filterCodigoPedido}
                 onChange={(event) => setFilterCodigoPedido(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    handleSearchByOrderNumber();
+                  }
+                }}
                 className="rounded-2xl w-full pr-10"
               />
               {filterCodigoPedido !== "" && (
@@ -439,6 +445,7 @@ export function WaitListPage() {
             </button>
           </div>
         </div>
+
         {/* Filtro por nome do produto */}
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -450,6 +457,11 @@ export function WaitListPage() {
                 placeholder="Digite o nome do produto"
                 value={filterNomeProduto}
                 onChange={(event) => setFilterNomeProduto(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    handleSearchByProductName();
+                  }
+                }}
                 className="rounded-2xl w-full pr-10"
               />
               {filterNomeProduto !== "" && (
@@ -471,6 +483,7 @@ export function WaitListPage() {
             </button>
           </div>
         </div>
+
         {/* Filtro por Destino */}
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -482,6 +495,11 @@ export function WaitListPage() {
                 placeholder="Digite o destino"
                 value={filterDestino}
                 onChange={(event) => setFilterDestino(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    handleSearchByDestiny();
+                  }
+                }}
                 className="rounded-2xl w-full pr-10"
               />
               {filterDestino !== "" && (
