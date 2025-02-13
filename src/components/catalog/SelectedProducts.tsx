@@ -166,6 +166,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
                   onChange={(e) =>
                     handleInputChange(product.id, "quantidade", parseInt(e.target.value))
                   }
+                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   className="mt-1 rounded-2xl"
                 />
                 <button
