@@ -70,9 +70,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
       handleSuccessToast(response);
       onSendProductsSuccess(selectedProducts.map((product) => product.id));
       setSelectedProducts([]);
-      console.log("Dados enviados:", response);
     } catch (error: any) {
-      console.log("Erro ao enviar dados:", error);
       if (error.response.status === 403) {
         toast({
           variant: "destructive",
@@ -81,7 +79,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         });
       } else {
         handleFailToast();
-        console.error("Erro ao enviar dados:", error);
       }
     } finally {
       setLoadingSendProducts(false);
@@ -151,7 +148,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         }
       })
       .catch((error) => {
-        console.error("Erro ao acessar câmera:", error);
         toast({
           variant: "destructive",
           title: "Erro",

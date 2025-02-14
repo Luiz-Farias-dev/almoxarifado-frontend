@@ -53,7 +53,6 @@ const AddProductPage = () => {
         handleWarningToast("Produto já cadastrado.");
         return;
       }
-      console.log("Erro ao adicionar produto:", error);
       handleFailToast("Erro ao adicionar produto.");
     } finally {
       setLoadingForm(false);
@@ -74,7 +73,6 @@ const AddProductPage = () => {
       handleSuccessToast("Arquivo enviado com sucesso!");
       setFile(null);
     } catch (error: any) {
-      console.error("Erro ao enviar arquivo de produtos:", error);
       if (error.response.status === 400 && error.response.data.detail === "A planilha deve conter as colunas: Código Produto/Material, Nome Produto/Especificação, Unidade e Centro de Custo") {
         handleWarningToast("A planilha deve conter as colunas: 'Código Produto ou Material', 'Nome Produto ou Especificação', 'Unidade' e 'Centro de Custo'");
         return;

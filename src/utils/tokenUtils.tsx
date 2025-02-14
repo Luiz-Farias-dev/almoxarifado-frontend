@@ -8,7 +8,6 @@ export const getNameFromToken = (): string | null => {
     const decoded: { sub?: string } = jwtDecode(token);
     return decoded.sub || null;
   } catch (error) {
-    console.error("Erro ao decodificar o token:", error);
     return null;
   }
 };

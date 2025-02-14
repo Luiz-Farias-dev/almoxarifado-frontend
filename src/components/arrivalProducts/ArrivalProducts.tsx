@@ -133,7 +133,6 @@ export function ArrivalProductsPage() {
         setData(response);
       }
     } catch (error) {
-      console.error("Erro ao buscar os produtos", error);
     } finally {
       setIsLoading(false);
     }

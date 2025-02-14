@@ -68,7 +68,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
       handleSuccessToast();
       setSelectedProducts([]);
     } catch (error) {
-      console.error("Erro ao enviar dados:", error);
       handleFailToast();
     } finally {
       setLoadingSendProducts(false);

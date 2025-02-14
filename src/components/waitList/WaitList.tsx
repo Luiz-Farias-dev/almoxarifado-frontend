@@ -161,7 +161,6 @@ export const columns = (
               return updated;
             });
         } catch (error) {
-          console.error("Erro ao excluir o produto:", error);
         } finally {
           setIsDeleting(false);
           setIsDialogOpen(false);
@@ -263,15 +262,13 @@ export function WaitListPage() {
         centro_custo: undefined,
       });
 
-      console.log("Dados recebidos:", response);
-
       if (append) {
         setData((prev) => [...prev, ...response]);
       } else {
         setData(response);
       }
     } catch (error) {
-      console.error("Erro ao buscar os produtos", error);
+      
     } finally {
       setIsLoading(false);
     }

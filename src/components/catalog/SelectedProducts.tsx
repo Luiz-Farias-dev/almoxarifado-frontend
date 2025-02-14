@@ -76,7 +76,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
       setNome("");
       setDestino("");
     } catch (error) {
-      console.error("Erro ao enviar dados:", error);
       setErrorMessage("Erro ao enviar dados. Tente novamente.");
       setSuccessMessage(null);
     } finally {

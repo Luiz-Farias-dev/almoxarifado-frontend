@@ -15,7 +15,6 @@ function LoginPage() {
     setLoading(true);
     try {
       const response = await login(matricula, formatCPF(cpf));
-      console.log(response);
       const { access_token, refresh_token } = response.data;
       localStorage.setItem("accessToken", access_token);
       localStorage.setItem("refreshToken", refresh_token);

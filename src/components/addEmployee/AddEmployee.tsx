@@ -35,7 +35,6 @@ const AddEmployeePage = () => {
         tipo_funcionario: "",
       });
     } catch (error: any) {
-      console.error("Erro ao cadastrar funcionário:", error);
       if (error.response.status === 400) {
         handleFailToast("Funcionário já cadastrado com essa matrícula ou CPF.");
         return;
