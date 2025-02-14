@@ -133,6 +133,7 @@ export function ArrivalProductsPage() {
         setData(response);
       }
     } catch (error) {
+      console.error(error);
     } finally {
       setIsLoading(false);
     }

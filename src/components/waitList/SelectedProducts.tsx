@@ -147,7 +147,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
           video.play().then(() => requestAnimationFrame(scanFrame));
         }
       })
-      .catch((error) => {
+      .catch(() => {
         toast({
           variant: "destructive",
           title: "Erro",

@@ -268,7 +268,7 @@ export function WaitListPage() {
         setData(response);
       }
     } catch (error) {
-      
+      console.error(error);
     } finally {
       setIsLoading(false);
     }

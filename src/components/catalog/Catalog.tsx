@@ -137,7 +137,7 @@ export function CatalogPage() {
         setData(response);
       }
     } catch (error) {
-    
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
