@@ -64,7 +64,7 @@ api.interceptors.response.use(
         // Sem refresh token, desloga
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-        window.location.href = "/almoxarifado/login";
+        window.location.href = "/login";
         return Promise.reject(error);
       }
 
@@ -104,7 +104,7 @@ api.interceptors.response.use(
         failedRequestsQueue = [];
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-        window.location.href = "/almoxarifado/login";
+        window.location.href = "/login";
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
