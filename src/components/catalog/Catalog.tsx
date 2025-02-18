@@ -12,6 +12,9 @@ import {
 } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Camera } from "lucide-react";
+import jsQR from "jsqr";
+import { useToast } from "@/hooks/use-toast"
 import {
   Table,
   TableBody,
@@ -99,6 +102,10 @@ export function CatalogPage() {
   const [filterNome, setFilterNome] = useState("");
   const [filterCodigo, setFilterCodigo] = useState("");
   const [filterCentroCusto, setFilterCentroCusto] = useState("");
+  // Estado para controle do scanner
+  const [showScanner, setShowScanner] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const { toast } = useToast();
   // Estados da tabela
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -240,6 +247,62 @@ export function CatalogPage() {
     setSelectedProducts(combinedSelected);
   }, [rowSelection, data]);
 
+  useEffect(() => {
+    if (!showScanner) return;
+  
+    let stream: MediaStream;
+    const video = videoRef.current;
+  
+    const scanFrame = () => {
+      if (video?.readyState === video?.HAVE_ENOUGH_DATA) {
+        const canvas = document.createElement('canvas');
+        if (video) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+        }
+        const context = canvas.getContext('2d');
+        
+        if (context) {
+          if (video) {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          }
+          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          
+          if (code) {
+            setFilterCodigo(code.data);
+            setShowScanner(false);
+          }
+        }
+      }
+      if (showScanner) {
+        requestAnimationFrame(scanFrame);
+      }
+    };
+  
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+      .then((mediaStream) => {
+        stream = mediaStream;
+        if (video) {
+          video.srcObject = mediaStream;
+          video.play().then(() => requestAnimationFrame(scanFrame));
+        }
+      })
+      .catch(() => {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Permissão para usar a câmera é necessária para escanear QR codes",
+        });
+      });
+  
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [showScanner]);
+
   const table = useReactTable({
     data,
     columns,
@@ -309,7 +372,7 @@ export function CatalogPage() {
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Input
-                placeholder="Digite o código do produto"
+                placeholder="Digite ou escaneie o código do produto"
                 value={filterCodigo}
                 onChange={(event) => setFilterCodigo(event.target.value)}
                 onKeyDown={(event) => {
@@ -319,7 +382,7 @@ export function CatalogPage() {
                 }}
                 className="rounded-2xl w-full pr-10"
               />
-              {filterCodigo !== "" && (
+              {filterCodigo !== "" ? (
                 <button
                   type="button"
                   onClick={handleClearProductCodeFilter}
@@ -327,6 +390,14 @@ export function CatalogPage() {
                   aria-label="Limpar campo de texto"
                 >
                   ✕
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowScanner(true)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  <Camera className="text-gray-500"/>
                 </button>
               )}
             </div>
@@ -453,6 +524,26 @@ export function CatalogPage() {
             });
           }}
         />
+      )}
+      {showScanner && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg max-w-md w-full">
+            <video 
+              ref={videoRef}
+              className="w-full rounded-lg"
+              playsInline
+            />
+            <p className="text-center text-gray-600 text-sm mt-2">
+              Escaneie o QR Code do Código do produto, assim que o código for lido a câmera será fechada.
+            </p>
+            <button
+              onClick={() => setShowScanner(false)}
+              className="mt-4 w-full px-4 py-2 bg-red-500 text-white rounded-2xl hover:bg-red-600"
+            >
+              Fechar Câmera
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

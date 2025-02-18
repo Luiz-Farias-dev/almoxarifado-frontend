@@ -102,10 +102,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
 
   const isSendButtonDisabled = !(matricula && cpf && !cpfError);
 
-  const handleOpenScanner = () => {
-    setShowScanner(true);
-  };
-
   useEffect(() => {
     if (!showScanner) return;
   
@@ -275,7 +271,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               />
               <button
                 type="button"
-                onClick={handleOpenScanner}
+                onClick={() => setShowScanner(true)}
                 className="absolute right-2 top-2 p-1 hover:bg-gray-100 rounded-full"
               >
                 <Camera className="h-5 w-5 text-gray-500" />
