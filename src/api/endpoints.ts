@@ -115,6 +115,22 @@ export const addProductToArrivalProducts = async (data: ArrivalProductstProps) =
   return response.data;
 }
 
+// Acurácia de Estoque
+interface InventoryAccuracyProps {
+  nome_funcionario?: string;
+  produtos: {
+    codigo_produto: string;
+    nome_produto: string;
+    centro_custo: string;
+    quantidade: number;
+    unidade: string | null;
+  }[];
+}
+export const addProductToInventoryAccuracy = async (data: InventoryAccuracyProps) => {
+  const response = await api.post("/acuracia-estoque/", data);
+  return response.data;
+}
+
 // Gerar Relatório
 export const generateReport = async (data_inicio: string, data_fim: string, tabela: string) => {
   const response = await api.get("/gerar-relatorio/", {
