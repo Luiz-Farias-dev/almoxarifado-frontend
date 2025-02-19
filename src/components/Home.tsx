@@ -1,6 +1,6 @@
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
-import { PlusCircle, CircleUserRound , PackagePlus, PackageOpen, Box, List, FileText } from "lucide-react";
+import { PlusCircle, CircleUserRound , PackagePlus, Layers, Box, List, FileText } from "lucide-react";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -39,7 +39,7 @@ const HomePage = () => {
               onClick={() => navigate("acuracia-estoque")}
               className="w-full px-4 py-2 flex items-center gap-2 text-white bg-teal-500 hover:bg-teal-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-400 transform transition-transform duration-200 hover:scale-105"
             >
-              <PackageOpen className="w-5 h-5" />
+              <Layers className="w-5 h-5" />
               Acurácia de Estoque
             </button>
             <button
