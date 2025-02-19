@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster"
 import AddProductPage from "./components/addProducToCatalog/AddProduct";
 import AddEmployeePage from "./components/addEmployee/AddEmployee";
 import { ArrivalProductsPage } from "./components/arrivalProducts/ArrivalProducts";
+import { InventoryAccuracyPage } from "./components/inventoryAccuracy/InventoryAccuracy";
 import { CatalogPage } from "./components/catalog/Catalog"
 import { WaitListPage } from "./components/waitList/WaitList";
 import GenerateReportPage from "./components/generateReport/GenerateReport";
@@ -44,6 +45,10 @@ function App() {
         <Route
           path="/chegada-produtos"
           element={<PrivateRoute element={<ArrivalProductsPage />} />}
+        />
+        <Route
+          path="/acuracia-estoque"
+          element={<PrivateRoute element={<InventoryAccuracyPage />} />}
         />
         <Route
           path="/gerar-relatorio"

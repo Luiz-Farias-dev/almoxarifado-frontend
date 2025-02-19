@@ -23,6 +23,10 @@ const GenerateReportPage = () => {
     from: new Date(),
     to: addDays(new Date(), 0),
   });
+  const [dataInventario, setDataInventario] = useState<DateRange | undefined>({
+    from: new Date(),
+    to: addDays(new Date(), 0),
+  });
 
   const handleGenerateReport = async (reportType: string) => {
     try {
@@ -34,12 +38,19 @@ const GenerateReportPage = () => {
       } else if (reportType === "produtos_saida") {
         dateFrom = dataSaida?.from;
         dateTo = dataSaida?.to || dateFrom;
+      } else if (reportType === "inventario_saida") {
+        dateFrom = dataInventario?.from;
+        dateTo = dataInventario?.to || dateFrom;
       }
-  
+
       const formattedFrom = format(dateFrom!, "yyyy-MM-dd");
       const formattedTo = format(dateTo!, "yyyy-MM-dd");
-      
-      const response = await generateReport(formattedFrom, formattedTo, reportType);
+
+      const response = await generateReport(
+        formattedFrom,
+        formattedTo,
+        reportType
+      );
       const contentType = response.headers["content-type"];
       const blob = new Blob([response.data], { type: contentType });
       const url = window.URL.createObjectURL(blob);
@@ -75,7 +86,8 @@ const GenerateReportPage = () => {
     toast({
       variant: "warning",
       title: "Aviso",
-      description: "Não há produtos para gerar relatório nas datas selecionadas.",
+      description:
+        "Não há produtos para gerar relatório nas datas selecionadas.",
     });
   };
   const handleFailToast = () => {
@@ -98,7 +110,9 @@ const GenerateReportPage = () => {
             <AccordionItem value="item-1">
               <AccordionTrigger>Relatório Planilha de Chegada</AccordionTrigger>
               <AccordionContent>
-                <div className="mb-2 text-sm text-gray-600 font-medium">Selecione um data ou um período para gerar o relatório</div>
+                <div className="mb-2 text-sm text-gray-600 font-medium">
+                  Selecione um data ou um período para gerar o relatório
+                </div>
                 <Calendar
                   initialFocus
                   mode="range"
@@ -115,13 +129,18 @@ const GenerateReportPage = () => {
                     dataChegada.to ? (
                       <>
                         Gerar relatório dos dias{" "}
-                        {format(dataChegada.from, "dd/MM/yyyy", {locale: ptBR})} a{" "}
-                        {format(dataChegada.to, "dd/MM/yyyy", {locale: ptBR})}
+                        {format(dataChegada.from, "dd/MM/yyyy", {
+                          locale: ptBR,
+                        })}{" "}
+                        a{" "}
+                        {format(dataChegada.to, "dd/MM/yyyy", { locale: ptBR })}
                       </>
                     ) : (
                       <>
                         Gerar relatório do dia{" "}
-                        {format(dataChegada.from, "dd/MM/yyyy", {locale: ptBR})}
+                        {format(dataChegada.from, "dd/MM/yyyy", {
+                          locale: ptBR,
+                        })}
                       </>
                     )
                   ) : (
@@ -133,7 +152,9 @@ const GenerateReportPage = () => {
             <AccordionItem value="item-2">
               <AccordionTrigger>Relatório Planilha de Saída</AccordionTrigger>
               <AccordionContent>
-                <div className="mb-2 text-sm text-gray-600 font-medium">Selecione um data ou um período para gerar o relatório</div>
+                <div className="mb-2 text-sm text-gray-600 font-medium">
+                  Selecione um data ou um período para gerar o relatório
+                </div>
                 <Calendar
                   initialFocus
                   mode="range"
@@ -150,13 +171,59 @@ const GenerateReportPage = () => {
                     dataSaida.to ? (
                       <>
                         Gerar relatório dos dias{" "}
-                        {format(dataSaida.from, "dd/MM/yyyy", {locale: ptBR})} a{" "}
-                        {format(dataSaida.to, "dd/MM/yyyy", {locale: ptBR})}
+                        {format(dataSaida.from, "dd/MM/yyyy", { locale: ptBR })}{" "}
+                        a {format(dataSaida.to, "dd/MM/yyyy", { locale: ptBR })}
                       </>
                     ) : (
                       <>
                         Gerar relatório do dia{" "}
-                        {format(dataSaida.from, "dd/MM/yyyy", {locale: ptBR})}
+                        {format(dataSaida.from, "dd/MM/yyyy", { locale: ptBR })}
+                      </>
+                    )
+                  ) : (
+                    <span>Selecione uma data</span>
+                  )}
+                </button>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-3">
+              <AccordionTrigger>
+                Relatório Planilha de Acurácia de Estoque
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="mb-2 text-sm text-gray-600 font-medium">
+                  Selecione um data ou um período para gerar o relatório
+                </div>
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={dataInventario?.from}
+                  selected={dataInventario}
+                  onSelect={setDataInventario}
+                  disabled={isDateDisabled}
+                />
+                <button
+                  onClick={() => handleGenerateReport("inventario_saida")}
+                  className="mt-2 px-4 py-2 bg-green-600 text-white rounded-2xl shadow hover:bg-green-700 transition-colors"
+                >
+                  {dataInventario?.from ? (
+                    dataInventario.to ? (
+                      <>
+                        Gerar relatório dos dias{" "}
+                        {format(dataInventario.from, "dd/MM/yyyy", {
+                          locale: ptBR,
+                        })}{" "}
+                        a{" "}
+                        {format(dataInventario.to, "dd/MM/yyyy", {
+                          locale: ptBR,
+                        })}
+                      </>
+                    ) : (
+                      <>
+                        Gerar relatório do dia{" "}
+                        {format(dataInventario.from, "dd/MM/yyyy", {
+                          locale: ptBR,
+                        })}
                       </>
                     )
                   ) : (
