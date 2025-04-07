@@ -6,7 +6,6 @@ import LoadingSpinner from "./LoadingSpinner";
 
 function LoginPage() {
   const [cpf, setCpf] = useState("");
-  const [matricula, setMatricula] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -14,7 +13,7 @@ function LoginPage() {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const response = await login(matricula, formatCPF(cpf));
+      const response = await login(formatCPF(cpf));
       const { access_token, refresh_token } = response.data;
       localStorage.setItem("accessToken", access_token);
       localStorage.setItem("refreshToken", refresh_token);
@@ -24,14 +23,10 @@ function LoginPage() {
         setLoginError(error.response?.data?.detail || "Apenas administradores podem acessar o sistema.");
         return
       };
-      setLoginError(error.response?.data?.detail || "Erro ao validar matrícula e CPF.");
+      setLoginError(error.response?.data?.detail || "Erro ao validar CPF.");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleMatriculaChange = (value: string) => {
-    setMatricula(value);
   };
 
   const handleCpfChange = (value: string) => {
@@ -51,7 +46,7 @@ function LoginPage() {
         </h1>
         <p className="text-center text-gray-500">Por favor, faça login para continuar</p>
         <div className="mt-6">
-          <label htmlFor="matricula" className="block text-sm font-medium text-gray-700">
+          {/* <label htmlFor="matricula" className="block text-sm font-medium text-gray-700">
             Matrícula
           </label>
           <input
@@ -62,7 +57,7 @@ function LoginPage() {
             value={matricula}
             onChange={(e) => handleMatriculaChange(e.target.value)}
             className="w-full mt-1 p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-          />
+          /> */}
           <label htmlFor="cpf" className="mt-3 block text-sm font-medium text-gray-700">
             CPF
           </label>
@@ -80,11 +75,11 @@ function LoginPage() {
         <button
           onClick={handleLogin}
           className={`w-full mt-4 px-4 py-2 text-white focus:outline-none rounded-2xl focus:ring-2 focus:ring-offset-2 ${
-            isValidCPF(cpf) && matricula
+            isValidCPF(cpf)
               ? "bg-blue-500 hover:bg-blue-600"
               : "bg-gray-400 cursor-not-allowed"
           }`}
-          disabled={!isValidCPF(cpf) || !matricula || loading}
+          disabled={!isValidCPF(cpf) || loading}
         >
           {loading ? <LoadingSpinner message="Carregando" /> : "Entrar"}
         </button>
