@@ -36,7 +36,7 @@ const AddEmployeePage = () => {
       });
     } catch (error: any) {
       if (error.response.status === 400) {
-        handleFailToast("Funcionário já cadastrado com essa matrícula ou CPF.");
+        handleFailToast("Funcionário já cadastrado com esse CPF.");
         return;
       }
       handleFailToast("Erro ao cadastrar funcionário.");
@@ -96,7 +96,7 @@ const AddEmployeePage = () => {
             </div>
             <div>
               <label htmlFor="matricula" className="block text-sm font-medium text-gray-700">
-                Matrícula
+                Matrícula (Opcional)
               </label>
               <input
                 type="text"
@@ -106,7 +106,6 @@ const AddEmployeePage = () => {
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Informe a matrícula"
-                required
               />
             </div>
             <div>
@@ -137,12 +136,12 @@ const AddEmployeePage = () => {
             <button
               type="submit"
               className={`w-full py-2 px-4 text-white font-medium rounded-2xl shadow-sm focus:outline-none flex items-center justify-center ${
-                formData.nome && formData.matricula && formData.cpf && formData.tipo_funcionario
+                formData.nome && formData.cpf && formData.tipo_funcionario
                   ? "bg-blue-500 hover:bg-blue-600"
                   : "bg-gray-400 cursor-not-allowed"
               }`}
               disabled={
-                !formData.nome || !formData.matricula || !formData.cpf || !formData.tipo_funcionario || loading
+                !formData.nome || !formData.cpf || !formData.tipo_funcionario || loading
               }
             >
               {loading ? <LoadingSpinner message="Enviando..." /> : "Cadastrar Funcionário"}

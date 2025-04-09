@@ -1,7 +1,7 @@
 import api from "./axios";
 
-export const login = async (matricula: string, cpf: string) => {
-  const response = await api.post("/login/", { matricula, cpf });
+export const login = async (cpf: string) => {
+  const response = await api.post("/login/", { cpf });
   return response;
 };
 
@@ -33,7 +33,7 @@ interface GetProductsParams {
   codigo_produto?: string;
   centro_custo?: string;
 }
-export const getProducts = async (params: GetProductsParams) =>  {
+export const getProducts = async (params: GetProductsParams) => {
   const response = await api.get("/catalogo-produtos/", {
     params,
   });
@@ -73,8 +73,14 @@ export const getWaitingList = async (params: GetWaitingListParams) => {
 };
 
 // Remove produto da lista de espera
-export const removeProductFromWaitingList = async (codigo_pedido: string, codigo_produto: string, centro_custo: string) => {
-  const response = await api.delete(`/lista-espera/${codigo_pedido}/${codigo_produto}/${centro_custo}`);
+export const removeProductFromWaitingList = async (
+  codigo_pedido: string,
+  codigo_produto: string,
+  centro_custo: string
+) => {
+  const response = await api.delete(
+    `/lista-espera/${codigo_pedido}/${codigo_produto}/${centro_custo}`
+  );
   return response.data;
 };
 
@@ -96,7 +102,7 @@ interface FinalTableProps {
 export const addProductToFinalTable = async (data: FinalTableProps) => {
   const response = await api.post("/tabela-final/", data);
   return response.data;
-}
+};
 
 // Chegada Produtos
 interface ArrivalProductstProps {
@@ -110,10 +116,12 @@ interface ArrivalProductstProps {
     unidade: string | null;
   }[];
 }
-export const addProductToArrivalProducts = async (data: ArrivalProductstProps) => {
+export const addProductToArrivalProducts = async (
+  data: ArrivalProductstProps
+) => {
   const response = await api.post("/chegada-produtos/", data);
   return response.data;
-}
+};
 
 // Acurácia de Estoque
 interface InventoryAccuracyProps {
@@ -126,13 +134,19 @@ interface InventoryAccuracyProps {
     unidade: string | null;
   }[];
 }
-export const addProductToInventoryAccuracy = async (data: InventoryAccuracyProps) => {
+export const addProductToInventoryAccuracy = async (
+  data: InventoryAccuracyProps
+) => {
   const response = await api.post("/acuracia-estoque/", data);
   return response.data;
-}
+};
 
 // Gerar Relatório
-export const generateReport = async (data_inicio: string, data_fim: string, tabela: string) => {
+export const generateReport = async (
+  data_inicio: string,
+  data_fim: string,
+  tabela: string
+) => {
   const response = await api.get("/gerar-relatorio/", {
     headers: {
       "Content-Type": "application/json",
@@ -145,4 +159,4 @@ export const generateReport = async (data_inicio: string, data_fim: string, tabe
     responseType: "blob",
   });
   return response;
-}
+};
