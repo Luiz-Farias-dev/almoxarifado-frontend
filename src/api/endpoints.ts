@@ -1,7 +1,7 @@
 import api from "./axios";
 
-export const login = async (cpf: string) => {
-  const response = await api.post("/login/", { cpf });
+export const login = async (cpf: string, senha: string) => {
+  const response = await api.post("/login/", { cpf, senha });
   return response;
 };
 
