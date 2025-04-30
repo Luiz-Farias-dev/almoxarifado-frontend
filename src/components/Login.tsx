@@ -12,7 +12,8 @@ function LoginPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleLogin = async () => { 
+    console.log("submit");
     setLoading(true);
     try {
       const response = await login(formatCPF(cpf), senha);
@@ -21,18 +22,19 @@ function LoginPage() {
       localStorage.setItem("refreshToken", refresh_token);
       navigate("/");
     } catch (error: any) {
+      setLoginError(null);
+      setLoginSenhaError(null);
       if (error.response?.status === 403) {
         setLoginError(error.response?.data?.detail || "Apenas administradores podem acessar o sistema.");
-        return
-      };
-      if (error.response?.status === 401) {
+      } else if (error.response?.status === 401) {
         setLoginSenhaError(error.response?.data?.detail || "Senha incorreta.");
-        return
-      };
-      setLoginError(error.response?.data?.detail || "Erro ao validar CPF.");
+      } else {
+        setLoginError(error.response?.data?.detail || "Erro ao validar CPF.");
+      }
     } finally {
-      setLoading(false);
-    }
+      setLoading(false)
+      setLoading(false)
+    }  
   };
 
   const handleCpfChange = (value: string) => {
@@ -60,47 +62,49 @@ function LoginPage() {
           Bem-vindo!
         </h1>
         <p className="text-center text-gray-500">Por favor, faça login para continuar</p>
-        <div className="mt-6">
-          <label htmlFor="cpf" className="mt-3 block text-sm font-medium text-gray-700">
-            CPF
-          </label>
-          <input
-            autoComplete="one-time-code"
-            type="text"
-            id="cpf"
-            placeholder="Digite seu CPF"
-            value={cpf}
-            onChange={(e) => handleCpfChange(e.target.value)}
-            className="w-full mt-1 p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-          />
-            {loginError && <p className="text-red-500 text-sm mt-1">{loginError}</p>}
-        </div>
-        <div className="mt-6">
-          <label htmlFor="senha" className="mt-3 block text-sm font-medium text-gray-700">
-            Senha
-          </label>
-          <input
-            autoComplete="one-time-code"
-            type="password"
-            id="senha"
-            placeholder="Digite sua senha"
-            value={senha}
-            onChange={(e) => handleSenhaChange(e.target.value)}
-            className="w-full mt-1 p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-          />
-            {loginSenhaError && <p className="text-red-500 text-sm mt-1">{loginSenhaError}</p>}
-        </div>
-        <button
+          <div className="mt-6">
+            <label htmlFor="cpf" className="mt-3 block text-sm font-medium text-gray-700">
+              CPF
+            </label>
+            <input
+              autoComplete="one-time-code"
+              type="text"
+              id="cpf"
+              placeholder="Digite seu CPF"
+              value={cpf}
+              onChange={(e) => handleCpfChange(e.target.value)}
+              className="w-full mt-1 p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+            />
+              {loginError && <p className="text-red-500 text-sm mt-1">{loginError}</p>}
+          </div>
+          <div className="mt-6">
+            <label htmlFor="senha" className="mt-3 block text-sm font-medium text-gray-700">
+              Senha
+            </label>
+            <input
+              autoComplete="one-time-code"
+              type="password"
+              id="senha"
+              placeholder="Digite sua senha"
+              value={senha}
+              onChange={(e) => handleSenhaChange(e.target.value)}
+              className="w-full mt-1 p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+            />
+              {loginSenhaError && <p className="text-red-500 text-sm mt-1">{loginSenhaError}</p>}
+          </div>
+          <button
           onClick={handleLogin}
+          type="button"
           className={`w-full mt-4 px-4 py-2 text-white focus:outline-none rounded-2xl focus:ring-2 focus:ring-offset-2 ${
             isValidCPF(cpf) && senha
               ? "bg-blue-500 hover:bg-blue-600"
               : "bg-gray-400 cursor-not-allowed"
-          }`}
-          disabled={!isValidCPF(cpf) || !senha || loading}
-        >
-          {loading ? <LoadingSpinner message="Carregando" /> : "Entrar"}
-        </button>
+            }`}
+            disabled={!isValidCPF(cpf) || !senha || loading}
+            >
+            {loading ? <LoadingSpinner message="Carregando" /> : "Entrar"}
+          </button>
+
       </div>
     </div>
   );
