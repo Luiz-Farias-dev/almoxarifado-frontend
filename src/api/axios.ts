@@ -36,25 +36,26 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Se 401 e não foi tentado "retry" ainda
+    if (
+      error.response?.status === 401 &&
+      originalRequest.url?.includes("/login")
+    ) {
+      return Promise.reject(error); // Deixa o componente tratar o erro
+    }
+
+    // Demais casos de 401 (token expirado)
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      // Se já estiver em processo de refresh, empilha as requisições
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedRequestsQueue.push({ resolve, reject });
         })
           .then((token) => {
-            // Usa o novo token para refazer a request
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-            }
+            originalRequest.headers.Authorization = `Bearer ${token}`;
             return axios(originalRequest);
           })
-          .catch((err) => {
-            return Promise.reject(err);
-          });
+          .catch((err) => Promise.reject(err));
       }
 
       // Se não estiver em refresh, dispara o refresh
@@ -80,7 +81,8 @@ api.interceptors.response.use(
           }
         );
 
-        const { access_token, refresh_token: newRefreshToken } = refreshResponse.data;
+        const { access_token, refresh_token: newRefreshToken } =
+          refreshResponse.data;
 
         // Atualiza no localStorage
         localStorage.setItem("accessToken", access_token);
@@ -95,7 +97,6 @@ api.interceptors.response.use(
         // Refaz a requisição original com o novo token
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
         return axios(originalRequest);
-
       } catch (err) {
         // Se deu erro no refresh, desloga
         failedRequestsQueue.forEach((req) => {
