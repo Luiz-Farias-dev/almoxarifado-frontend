@@ -13,10 +13,11 @@ import Header from "../Header";
 const AddProductPage = () => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    codigo_produto: "",
-    nome_produto: "",
-    unidade: "",
-    centro_custo: "",
+    Insumo_Cod: "",
+    SubInsumo_Cod: "",
+    SubInsumo_Especificacao: "",
+    Unid_Cod: "",
+    INSUMO_ITEMOBSOLETO: "N"
   });
   const [file, setFile] = useState<File | null>(null);
   const [loadingForm, setLoadingForm] = useState<boolean>(false);
@@ -36,17 +37,19 @@ const AddProductPage = () => {
     e.preventDefault();
     try {
       await addProduct({
-        nome_produto: formData.nome_produto,
-        codigo_produto: formData.codigo_produto,
-        unidade: formData.unidade,
-        centro_custo: formData.centro_custo,
+        SubInsumo_Especificacao: formData.SubInsumo_Especificacao,
+        Insumo_Cod: formData.Insumo_Cod,
+        SubInsumo_Cod: formData.SubInsumo_Cod,
+        Unid_Cod: formData.Unid_Cod,
+        INSUMO_ITEMOBSOLETO: formData.INSUMO_ITEMOBSOLETO
       });
       handleSuccessToast("Produto adicionado com sucesso!");
       setFormData({
-        nome_produto: "",
-        codigo_produto: "",
-        unidade: "",
-        centro_custo: "",
+        SubInsumo_Especificacao: "",
+        Insumo_Cod: "",
+        SubInsumo_Cod:"",
+        Unid_Cod: "",
+        INSUMO_ITEMOBSOLETO:""
       });
     } catch (error: any) {
       if (error.response && error.response.status === 400) {
@@ -121,52 +124,52 @@ const AddProductPage = () => {
                 <form onSubmit={handleFormSubmit} className="space-y-4">
                   <div>
                     <label
-                      htmlFor="nome_produto"
+                      htmlFor="Insumo_Cod"
                       className="block text-sm font-medium text-gray-700"
                     >
-                      Nome do Produto
+                      Código do Insumo
                     </label>
                     <input
                       type="text"
-                      id="nome_produto"
-                      name="nome_produto"
-                      value={formData.nome_produto}
+                      id="Insumo_Cod"
+                      name="Insumo_Cod"
+                      value={formData.Insumo_Cod}
                       onChange={handleChange}
                       className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Informe o nome do produto"
+                      placeholder="Informe o código do insumo"
                       required
                     />
                   </div>
                   <div>
                     <label
-                      htmlFor="codigo_produto"
+                      htmlFor="SubInsumo_Cod"
                       className="block text-sm font-medium text-gray-700"
                     >
-                      Código do Produto
+                      Código do SubInsumo
                     </label>
                     <input
                       type="text"
-                      id="codigo_produto"
-                      name="codigo_produto"
-                      value={formData.codigo_produto}
+                      id="SubInsumo_Cod"
+                      name="SubInsumo_Cod"
+                      value={formData.SubInsumo_Cod}
                       onChange={handleChange}
                       className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Informe o código do produto"
+                      placeholder="Informe o código do subinsumo"
                       required
                     />
                   </div>
                   <div>
                     <label
-                      htmlFor="unidade"
+                      htmlFor="Unid_Cod"
                       className="block text-sm font-medium text-gray-700"
                     >
-                      Unidade de Medida (Opcional)
+                      Unidade de Medida
                     </label>
                     <input
                       type="text"
-                      id="unidade"
-                      name="unidade"
-                      value={formData.unidade}
+                      id="Unid_Cod"
+                      name="Unid_Cod"
+                      value={formData.Unid_Cod}
                       onChange={handleChange}
                       className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Informe a unidade de medida"
@@ -174,34 +177,37 @@ const AddProductPage = () => {
                   </div>
                   <div>
                     <label
-                      htmlFor="centro_custo"
+                      htmlFor="SubInsumo_Especificacao"
                       className="block text-sm font-medium text-gray-700"
                     >
-                      Centro de Custo
+                      Especificação do Insumo/Subinsumo
                     </label>
                     <input
                       type="text"
-                      id="centro_custo"
-                      name="centro_custo"
-                      value={formData.centro_custo}
+                      id="SubInsumo_Especificacao"
+                      name="SubInsumo_Especificacao"
+                      value={formData.SubInsumo_Especificacao}
                       onChange={handleChange}
                       className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Informe o centro de custo"
+                      placeholder="Informe a especificação do subinsumo"
                       required
                     />
                   </div>
                   <button
                     type="submit"
                     className={`w-full py-2 px-4 text-white font-medium rounded-2xl shadow-sm focus:outline-none flex items-center justify-center ${
-                      formData.nome_produto &&
-                      formData.codigo_produto &&
-                      formData.centro_custo
+                      formData.SubInsumo_Especificacao &&
+                      formData.Insumo_Cod &&
+                      formData.SubInsumo_Cod &&
+                      formData.Unid_Cod
                         ? "bg-blue-500 hover:bg-blue-600"
                         : "bg-gray-400 cursor-not-allowed"
                     }`}
                     disabled={
-                      !formData.nome_produto ||
-                      !formData.codigo_produto ||
+                      !formData.SubInsumo_Especificacao ||
+                      !formData.Insumo_Cod ||
+                      !formData.SubInsumo_Cod ||
+                      !formData.Unid_Cod ||
                       loadingForm
                     }
                   >
