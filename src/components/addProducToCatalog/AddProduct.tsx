@@ -234,10 +234,10 @@ const AddProductPage = () => {
                   <div className="space-y-4">
                     <div>
                       <p className="text-xs text-gray-500 mb-4">
-                        A planilha deve conter, pelo menos, quatro colunas
-                        seguindo o formato de nome "Código Produto ou Material",
-                        "Nome Produto ou Especificação", "Unidade" e "Centro de
-                        Custo".
+                        A planilha deve conter as colunas
+                        seguindo o formato de nome "Código do Insumo",
+                        "Código do SubInsumo
+", "Unidade de Medida" e "Especificação do Insumo/Subinsumo".
                       </p>
                       <input
                         type="file"
