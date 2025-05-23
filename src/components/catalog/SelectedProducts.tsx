@@ -8,11 +8,11 @@ import { getNameFromToken } from "@/utils/tokenUtils";
 
 type SelectedProduct = {
   id: number;
-  codigo_produto: string;
-  nome_produto: string;
-  centro_custo: string;
+  insumo_cod: string;
+  unid_cod: string;
+  subinsumo_especificacao: string;
+  insumo_itemobsoleto: string;
   quantidade: number;
-  unidade: string | null;
 };
 
 type SelectedProductsProps = {
@@ -60,11 +60,10 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
       nome_funcionario_1: nome || undefined,
       destino: destino,
       produtos: selectedProducts.map((product) => ({
-        codigo_produto: product.codigo_produto,
-        nome_produto: product.nome_produto,
-        centro_custo: product.centro_custo,
+        insumo_cod: product.insumo_cod,
+       subinsumo_especificacao: product.subinsumo_especificacao,
         quantidade: product.quantidade,
-        unidade: product.unidade,
+        unid_cod: product.unid_cod,
       })),
     };
 
@@ -129,29 +128,29 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               <label className="block text-sm font-medium text-gray-700">
                 Código do Produto
               </label>
-              <div className="mt-1 text-gray-900">{product.codigo_produto}</div>
+              <div className="mt-1 text-gray-900">{product.insumo_cod}</div>
             </div>
             {/* Nome do produto */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Nome do Produto
               </label>
-              <div className="mt-1 text-gray-900">{product.nome_produto}</div>
+              <div className="mt-1 text-gray-900">{product.subinsumo_especificacao}</div>
             </div>
             {/* Unidade */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Unidade
               </label>
-              <div className="mt-1 text-gray-900">{product.unidade || "-"}</div>
+              <div className="mt-1 text-gray-900">{product.unid_cod || "-"}</div>
             </div>
-            {/* Centro de Custo */}
+            {/* Centro de Custo
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Centro de Custo
               </label>
               <div className="mt-1 text-gray-900">{product.centro_custo}</div>
-            </div>
+            </div> */}
             {/* Quantidade */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -171,7 +170,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
                 <button
                     className="pl-2 mr-1 text-black hover:text-gray-800 transition"
                     onClick={() => handleRemove(product.id)}
-                    aria-label={`Remover ${product.nome_produto}`}
+                    aria-label={`Remover ${product.subinsumo_especificacao}`}
                   >
                   <X size={20} />
                 </button>

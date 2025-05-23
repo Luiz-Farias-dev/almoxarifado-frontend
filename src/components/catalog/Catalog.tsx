@@ -30,10 +30,10 @@ import Header from "../Header";
 
 export type Produto = {
   id: number;
-  codigo_produto: string;
-  nome_produto: string;
-  unidade: string | null;
-  centro_custo: string;
+  insumo_cod: string;
+  unid_cod: string;
+  subinsumo_especificacao: string;
+  insumo_itemobsoleto: string;
   data_att: string;
 };
 
@@ -61,32 +61,30 @@ export const columns: ColumnDef<Produto>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "codigo_produto",
-    header: "Código do Produto",
-    cell: ({ row }) => <div>{row.getValue("codigo_produto")}</div>,
+    accessorKey: "Insumo_Cod",
+    header: "Código do Insumo",
+    cell: ({ row }) => <div>{row.getValue("Insumo_Cod")}</div>,
   },
   {
-    accessorKey: "nome_produto",
-    header: "Nome do Produto",
-    cell: ({ row }) => <div>{row.getValue("nome_produto")}</div>,
-  },
-  {
-    accessorKey: "unidade",
+    accessorKey: "Unid_Cod",
     header: "Unidade",
-    cell: ({ row }) => <div>{row.getValue("unidade")}</div>,
+    cell: ({ row }) => <div>{row.getValue("Unid_Cod")}</div>,
   },
   {
-    accessorKey: "centro_custo",
-    header: "Centro de Custo",
-    cell: ({ row }) => {
-      return <div>{row.getValue("centro_custo")}</div>;
-    },
+    accessorKey: "SubInsumo_Especificacao",
+    header: "Especificação",
+    cell: ({ row }) => <div>{row.getValue("SubInsumo_Especificacao")}</div>,
   },
   {
-    accessorKey: "data_att",
+    accessorKey: "INSUMO_ITEMOBSOLETO",
+    header: "Item Obsoleto",
+    cell: ({ row }) => <div>{row.getValue("INSUMO_ITEMOBSOLETO")}</div>,
+  },
+  {
+    accessorKey: "Audit_Insert_Date",
     header: "Data de Atualização",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("data_att"));
+      const date = new Date(row.getValue("Audit_Insert_Date"));
       return <div>{date.toLocaleString()}</div>;
     },
   },
@@ -116,11 +114,9 @@ export function CatalogPage() {
   const [selectedProducts, setSelectedProducts] = useState<
     {
       id: number;
-      codigo_produto: string;
-      nome_produto: string;
-      centro_custo: string;
+      insumo_cod: string;
+      unid_cod: string;
       quantidade: number;
-      unidade: string | null;
     }[]
   >([]);
   // Referência para o contêiner com scroll (infinite scroll)
@@ -128,27 +124,34 @@ export function CatalogPage() {
 
   // FUNÇÃO PRINCIPAL PARA BUSCAR DADOS
   async function fetchData(newSkip: number, append: boolean) {
-    setIsLoading(true);
-    try {
-      const response = await getProducts({
-        skip: newSkip,
-        limit,
-        nome_produto: filterNome,
-        codigo_produto: filterCodigo,
-        centro_custo: filterCentroCusto,
-      });
+  setIsLoading(true);
+  try {
+    const response = await getProducts({
+      skip: newSkip,
+      limit,
+      subinsumo_especificacao: filterNome,
+      insumo_cod: filterCodigo,
 
-      if (append) {
-        setData((prev) => [...prev, ...response]);
-      } else {
-        setData(response);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
+    });
+
+    console.log("Dados recebidos da API:", response);
+
+    if (append) {
+      setData((prev) => [...prev, ...response]);
+    } else {
+      setData(response);
     }
+  } catch (error) {
+    console.error("Erro ao buscar produtos:", error);
+    toast({
+      variant: "destructive",
+      title: "Erro",
+      description: "Falha ao carregar os produtos",
+    });
+  } finally {
+    setIsLoading(false);
   }
+}
 
   // DISPARAR BUSCA MANUALMENTE (botões de busca)
   const handleSearchByName = () => {

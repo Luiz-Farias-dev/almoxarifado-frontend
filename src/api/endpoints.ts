@@ -29,9 +29,10 @@ export const addProduct = async (data: any) => {
 interface GetProductsParams {
   skip?: number;
   limit?: number;
-  nome_produto?: string;
-  codigo_produto?: string;
-  centro_custo?: string;
+  insumo_cod?: string;
+  unid_cod?: string;
+  subinsumo_especificacao?: string;
+  insumo_itemobsoleto?: string;
 }
 export const getProducts = async (params: GetProductsParams) => {
   const response = await api.get("/catalogo-produtos/", {
@@ -45,11 +46,10 @@ interface WaitingListProps {
   nome_funcionario_1?: string;
   destino: string;
   produtos: {
-    codigo_produto: string;
-    nome_produto: string;
-    centro_custo: string;
+    insumo_cod: string;
+    subinsumo_especificacao: string;
     quantidade: number;
-    unidade: string | null;
+    unid_cod: string | null;
   }[];
 }
 export const addProductToWaitingList = async (data: WaitingListProps) => {
