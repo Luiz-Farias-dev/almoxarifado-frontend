@@ -236,7 +236,7 @@ const AddProductPage = () => {
                       <p className="text-xs text-gray-500 mb-4">
                         A planilha deve conter as colunas
                         seguindo o formato de nome "Insumo_Cod",
-                        "SubInsumo_Cod", "Unid_Cod" e "SubInsumo_Especificacao", "INSUMO_ITEMOBSOLETO".
+                        "SubInsumo_Cod", "Unid_Cod", "SubInsumo_Especificacao" e "INSUMO_ITEMOBSOLETO".
                       </p>
                       <input
                         type="file"
