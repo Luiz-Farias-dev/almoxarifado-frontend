@@ -29,10 +29,10 @@ export const addProduct = async (data: any) => {
 interface GetProductsParams {
   skip?: number;
   limit?: number;
-  insumo_cod?: string;
-  unid_cod?: string;
-  subinsumo_especificacao?: string;
-  insumo_itemobsoleto?: string;
+  Insumo_Cod?: string;
+  Unid_Cod?: string;
+  SubInsumo_Especificacao?: string;
+  INSUMO_ITEMOBSOLETO?: string;
 }
 export const getProducts = async (params: GetProductsParams) => {
   const response = await api.get("/catalogo-produtos/", {

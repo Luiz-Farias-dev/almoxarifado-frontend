@@ -65,6 +65,11 @@ export const columns: ColumnDef<Produto>[] = [
     header: "Código do Insumo",
     cell: ({ row }) => <div>{row.getValue("Insumo_Cod")}</div>,
   },
+    {
+    accessorKey: "SubInsumo_Cod",
+    header: "Código do SubInsumo",
+    cell: ({ row }) => <div>{row.getValue("SubInsumo_Cod")}</div>,
+  },
   {
     accessorKey: "Unid_Cod",
     header: "Unidade",
@@ -114,8 +119,8 @@ export function CatalogPage() {
   const [selectedProducts, setSelectedProducts] = useState<
     {
       id: number;
-      insumo_cod: string;
-      unid_cod: string;
+      Insumo_Cod: string;
+      Unid_Cod: string;
       quantidade: number;
     }[]
   >([]);
@@ -129,12 +134,10 @@ export function CatalogPage() {
     const response = await getProducts({
       skip: newSkip,
       limit,
-      subinsumo_especificacao: filterNome,
-      insumo_cod: filterCodigo,
+      SubInsumo_Especificacao: filterNome,
+      Insumo_Cod: filterCodigo,
 
     });
-
-    console.log("Dados recebidos da API:", response);
 
     if (append) {
       setData((prev) => [...prev, ...response]);
