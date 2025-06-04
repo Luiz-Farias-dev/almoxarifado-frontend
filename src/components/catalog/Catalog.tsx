@@ -30,10 +30,11 @@ import Header from "../Header";
 
 export type Produto = {
   id: number;
-  insumo_cod: string;
-  unid_cod: string;
-  subinsumo_especificacao: string;
-  insumo_itemobsoleto: string;
+  quantidade: number;
+  Insumo_Cod: number;
+  Unid_Cod: string;
+  SubInsumo_Especificacao: string;
+  INSUMO_ITEMOBSOLETO: string;
   data_att: string;
 };
 
@@ -119,7 +120,7 @@ export function CatalogPage() {
   const [selectedProducts, setSelectedProducts] = useState<
     {
       id: number;
-      Insumo_Cod: string;
+      Insumo_Cod: number;
       Unid_Cod: string;
       quantidade: number;
     }[]

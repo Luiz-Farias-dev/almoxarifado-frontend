@@ -8,10 +8,10 @@ import { getNameFromToken } from "@/utils/tokenUtils";
 
 type SelectedProduct = {
   id: number;
-  insumo_cod: string;
-  unid_cod: string;
-  subinsumo_especificacao: string;
-  insumo_itemobsoleto: string;
+  Insumo_Cod: number;
+  Unid_Cod: string;
+  SubInsumo_Especificacao: string;
+  INSUMO_ITEMOBSOLETO: string;
   quantidade: number;
 };
 
@@ -60,10 +60,11 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
       nome_funcionario_1: nome || undefined,
       destino: destino,
       produtos: selectedProducts.map((product) => ({
-        insumo_cod: product.insumo_cod,
-       subinsumo_especificacao: product.subinsumo_especificacao,
+        Insumo_Cod: product.Insumo_Cod,
+        Unid_Cod: product.Unid_Cod,
+        SubInsumo_Especificacao: product.SubInsumo_Especificacao,
+        INSUMO_ITEMOBSOLETO: product.INSUMO_ITEMOBSOLETO,
         quantidade: product.quantidade,
-        unid_cod: product.unid_cod,
       })),
     };
 
@@ -128,21 +129,21 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               <label className="block text-sm font-medium text-gray-700">
                 Código do Produto
               </label>
-              <div className="mt-1 text-gray-900">{product.insumo_cod}</div>
+              <div className="mt-1 text-gray-900">{product.Insumo_Cod}</div>
             </div>
             {/* Nome do produto */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Nome do Produto
               </label>
-              <div className="mt-1 text-gray-900">{product.subinsumo_especificacao}</div>
+              <div className="mt-1 text-gray-900">{product.SubInsumo_Especificacao}</div>
             </div>
             {/* Unidade */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Unidade
               </label>
-              <div className="mt-1 text-gray-900">{product.unid_cod || "-"}</div>
+              <div className="mt-1 text-gray-900">{product.Unid_Cod || "-"}</div>
             </div>
             {/* Centro de Custo
             <div>
@@ -170,7 +171,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
                 <button
                     className="pl-2 mr-1 text-black hover:text-gray-800 transition"
                     onClick={() => handleRemove(product.id)}
-                    aria-label={`Remover ${product.subinsumo_especificacao}`}
+                    aria-label={`Remover ${product.SubInsumo_Especificacao}`}
                   >
                   <X size={20} />
                 </button>
@@ -185,7 +186,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Nome do Funcionário
+              Nome do Almoxarife
             </label>
             <Input
               type="text"
@@ -211,6 +212,12 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         {/* Botão de Enviar */}
         <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mt-4">
           <button
+            onClick={() => navigate("/lista-espera")}
+            className="w-full sm:w-auto px-4 py-2 rounded-2xl text-yellow-500 border border-yellow-500 hover:bg-yellow-500 hover:text-white transition"
+          >
+            Ir para Lista de Espera
+          </button>
+          <button
             onClick={handleSend}
             disabled={isSendButtonDisabled}
             className={`w-full sm:w-auto px-4 py-2 rounded-2xl transition ${
@@ -225,12 +232,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               "Enviar Produtos"
             )}
           </button>
-          <button
-            onClick={() => navigate("/lista-espera")}
-            className="w-full sm:w-auto px-4 py-2 rounded-2xl text-yellow-500 border border-yellow-500 hover:bg-yellow-500 hover:text-white transition"
-          >
-            Ir para Lista de Espera
-          </button>
+          
         </div>
       </div>
     </div>

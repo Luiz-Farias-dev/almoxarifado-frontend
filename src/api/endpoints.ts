@@ -29,7 +29,7 @@ export const addProduct = async (data: any) => {
 interface GetProductsParams {
   skip?: number;
   limit?: number;
-  Insumo_Cod?: string;
+  Insumo_Cod?: number;
   Unid_Cod?: string;
   SubInsumo_Especificacao?: string;
   INSUMO_ITEMOBSOLETO?: string;
@@ -46,10 +46,11 @@ interface WaitingListProps {
   nome_funcionario_1?: string;
   destino: string;
   produtos: {
-    insumo_cod: string;
-    subinsumo_especificacao: string;
+    Insumo_Cod: number;
+    SubInsumo_Especificacao: string;
     quantidade: number;
-    unid_cod: string | null;
+    Unid_Cod: string;
+    INSUMO_ITEMOBSOLETO?: string;
   }[];
 }
 export const addProductToWaitingList = async (data: WaitingListProps) => {
