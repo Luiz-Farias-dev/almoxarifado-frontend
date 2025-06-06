@@ -30,12 +30,21 @@ import Header from "../Header";
 
 export type Produto = {
   id: number;
-  quantidade: number;
   Insumo_Cod: number;
   Unid_Cod: string;
   SubInsumo_Especificacao: string;
   INSUMO_ITEMOBSOLETO: string;
   data_att: string;
+};
+
+type SelectedProduct = {
+  id: number;
+  Insumo_Cod: number;
+  SubInsumo_Cod: number;
+  Unid_Cod: string;
+  SubInsumo_Especificacao: string;
+  INSUMO_ITEMOBSOLETO: string;
+  quantidade: number;
 };
 
 export const columns: ColumnDef<Produto>[] = [
@@ -99,13 +108,14 @@ export const columns: ColumnDef<Produto>[] = [
 export function CatalogPage() {
   const [data, setData] = useState<Produto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  //Estado que controla Item Obsoleto
+  const [isObsoleto, setIsObsoleto] = useState<"S" | "N">("N");
   // Estados para paginação e filtros
   const [, setSkip] = useState(0);
   const limit = 100;
   // Estados para busca
   const [filterNome, setFilterNome] = useState("");
   const [filterCodigo, setFilterCodigo] = useState("");
-  const [filterCentroCusto, setFilterCentroCusto] = useState("");
   // Estado para controle do scanner
   const [showScanner, setShowScanner] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -117,14 +127,7 @@ export function CatalogPage() {
   const [rowSelection, setRowSelection] = useState<{ [key: string]: boolean }>(
     {}
   );
-  const [selectedProducts, setSelectedProducts] = useState<
-    {
-      id: number;
-      Insumo_Cod: number;
-      Unid_Cod: string;
-      quantidade: number;
-    }[]
-  >([]);
+  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
   // Referência para o contêiner com scroll (infinite scroll)
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -137,7 +140,7 @@ export function CatalogPage() {
       limit,
       SubInsumo_Especificacao: filterNome,
       Insumo_Cod: filterCodigo,
-
+      INSUMO_ITEMOBSOLETO: isObsoleto,
     });
 
     if (append) {
@@ -168,11 +171,11 @@ export function CatalogPage() {
     setData([]);
     fetchData(0, false);
   };
-  const handleSearchByCentroCusto = () => {
-    setSkip(0);
-    setData([]);
-    fetchData(0, false);
-  };
+
+  const handleObsoletoChange = (checked: boolean) => {
+    setIsObsoleto(checked ? "S":"N");
+  }
+  
 
   const handleClearProductNameFilter = () => {
     setFilterNome("");
@@ -186,8 +189,8 @@ export function CatalogPage() {
     setData([]);
     fetchData(0, false);
   };
-  const handleClearCentroCustoFilter = () => {
-    setFilterCentroCusto("");
+  // Função de busca por item obsoleto
+  const handleSearchByItemObsoleto = () => {
     setSkip(0);
     setData([]);
     fetchData(0, false);
@@ -197,7 +200,12 @@ export function CatalogPage() {
   useEffect(() => {
     fetchData(0, false);
   }, []);
-
+ 
+  //CONTROLE DE ESTADO DO CHECKBOX
+   useEffect(() => {
+    // Dispara busca quando o filtro de obsoleto muda
+    handleSearchByItemObsoleto();
+  }, [isObsoleto]);
   // SCROLL INFINITO
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -417,41 +425,18 @@ export function CatalogPage() {
           </div>
         </div>
 
-        {/* Filtro por centro de custo */}
+        {/* Filtro por item obsoleto */}
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar por centro de custo
+            Mostrar itens obsoletos
           </label>
           <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                placeholder="Digite o centro de custo"
-                value={filterCentroCusto}
-                onChange={(event) => setFilterCentroCusto(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    handleSearchByCentroCusto();
-                  }
-                }}
-                className="rounded-2xl w-full pr-10"
+              {/* Filtrar por item obsoleto */}
+             <Checkbox 
+                checked={isObsoleto === "S"}
+                onCheckedChange={handleObsoletoChange}
+                id="obsoleto-checkbox"
               />
-              {filterCentroCusto !== "" && (
-                <button
-                  type="button"
-                  onClick={handleClearCentroCustoFilter}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  aria-label="Limpar campo de texto"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            <button
-              onClick={handleSearchByCentroCusto}
-              className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
-            >
-              Buscar
-            </button>
           </div>
         </div>
       </div>

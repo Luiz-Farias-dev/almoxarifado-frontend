@@ -9,6 +9,7 @@ import { getNameFromToken } from "@/utils/tokenUtils";
 type SelectedProduct = {
   id: number;
   Insumo_Cod: number;
+  SubInsumo_Cod: number;
   Unid_Cod: string;
   SubInsumo_Especificacao: string;
   INSUMO_ITEMOBSOLETO: string;
@@ -61,12 +62,14 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
       destino: destino,
       produtos: selectedProducts.map((product) => ({
         Insumo_Cod: product.Insumo_Cod,
-        Unid_Cod: product.Unid_Cod,
-        SubInsumo_Especificacao: product.SubInsumo_Especificacao,
+        SubInsumo_Cod: product.SubInsumo_Cod,
+        Unid_Cod: product.Unid_Cod.trim(),
+        SubInsumo_Especificacao: product.SubInsumo_Especificacao.trim(),
         INSUMO_ITEMOBSOLETO: product.INSUMO_ITEMOBSOLETO,
         quantidade: product.quantidade,
       })),
     };
+    console.log("Payload a ser enviado:", JSON.stringify(dataToSend, null, 2))
 
     try {
       const response = await addProductToWaitingList(dataToSend);

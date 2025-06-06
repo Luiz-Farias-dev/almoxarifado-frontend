@@ -29,7 +29,7 @@ export const addProduct = async (data: any) => {
 interface GetProductsParams {
   skip?: number;
   limit?: number;
-  Insumo_Cod?: number;
+  Insumo_Cod?: string;
   Unid_Cod?: string;
   SubInsumo_Especificacao?: string;
   INSUMO_ITEMOBSOLETO?: string;
@@ -47,6 +47,7 @@ interface WaitingListProps {
   destino: string;
   produtos: {
     Insumo_Cod: number;
+    SubInsumo_Cod: number;
     SubInsumo_Especificacao: string;
     quantidade: number;
     Unid_Cod: string;
