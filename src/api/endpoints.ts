@@ -74,14 +74,15 @@ export const getWaitingList = async (params: GetWaitingListParams) => {
   return response.data;
 };
 
-// Remove produto da lista de espera
+// Remove produto da lista de espera (versão atualizada)
 export const removeProductFromWaitingList = async (
   codigo_pedido: string,
-  codigo_produto: string,
+  Insumo_Cod: number,
+  SubInsumo_Cod: number,
   centro_custo: string
 ) => {
   const response = await api.delete(
-    `/lista-espera/${codigo_pedido}/${codigo_produto}/${centro_custo}`
+    `/lista-espera/${codigo_pedido}/${Insumo_Cod}/${SubInsumo_Cod}/${centro_custo}`
   );
   return response.data;
 };

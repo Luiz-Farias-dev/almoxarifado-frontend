@@ -137,7 +137,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
             {/* Nome do produto */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Nome do Produto
+                Especificação do Insumo
               </label>
               <div className="mt-1 text-gray-900">{product.SubInsumo_Especificacao}</div>
             </div>

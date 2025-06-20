@@ -31,6 +31,7 @@ import Header from "../Header";
 export type Produto = {
   id: number;
   Insumo_Cod: number;
+  SubInsumo_Cod: number;
   Unid_Cod: string;
   SubInsumo_Especificacao: string;
   INSUMO_ITEMOBSOLETO: string;
@@ -70,15 +71,13 @@ export const columns: ColumnDef<Produto>[] = [
     enableSorting: false,
     enableHiding: false,
   },
-  {
+  { 
     accessorKey: "Insumo_Cod",
     header: "Código do Insumo",
-    cell: ({ row }) => <div>{row.getValue("Insumo_Cod")}</div>,
+    cell: ({ row }) => {
+      const produto = row.original;
+      return <div>{produto.Insumo_Cod}-{produto.SubInsumo_Cod}</div>;
   },
-    {
-    accessorKey: "SubInsumo_Cod",
-    header: "Código do SubInsumo",
-    cell: ({ row }) => <div>{row.getValue("SubInsumo_Cod")}</div>,
   },
   {
     accessorKey: "Unid_Cod",
@@ -131,64 +130,78 @@ export function CatalogPage() {
   // Referência para o contêiner com scroll (infinite scroll)
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // FUNÇÃO PRINCIPAL PARA BUSCAR DADOS
+  // FUNÇÃO PRINCIPAL PARA BUSCAR DADOS (ajustada)
   async function fetchData(newSkip: number, append: boolean) {
-  setIsLoading(true);
-  try {
-    const response = await getProducts({
-      skip: newSkip,
-      limit,
-      SubInsumo_Especificacao: filterNome,
-      Insumo_Cod: filterCodigo,
-      INSUMO_ITEMOBSOLETO: isObsoleto,
-    });
+    setIsLoading(true);
+    try {
+      // Remove zeros finais do filterCodigo antes da busca
+      const codigoBusca = filterCodigo.replace(/0+$/, '');
+      
+      const response = await getProducts({
+        skip: newSkip,
+        limit,
+        SubInsumo_Especificacao: filterNome,
+        Insumo_Cod: codigoBusca, // Usa o código ajustado
+        INSUMO_ITEMOBSOLETO: isObsoleto,
+      });
 
-    if (append) {
-      setData((prev) => [...prev, ...response]);
-    } else {
-      setData(response);
+      if (append) {
+        setData((prev) => [...prev, ...response]);
+      } else {
+        setData(response);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar produtos:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao carregar os produtos",
+      });
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error("Erro ao buscar produtos:", error);
-    toast({
-      variant: "destructive",
-      title: "Erro",
-      description: "Falha ao carregar os produtos",
-    });
-  } finally {
-    setIsLoading(false);
   }
-}
 
-  // DISPARAR BUSCA MANUALMENTE (botões de busca)
+  // DISPARAR BUSCA MANUALMENTE (botões de busca - ajustados)
   const handleSearchByName = () => {
     setSkip(0);
     setData([]);
     fetchData(0, false);
   };
+
   const handleSearchByCode = () => {
-    setSkip(0);
-    setData([]);
-    fetchData(0, false);
+    // Remove zeros finais e atualiza o estado
+    if (filterCodigo && /0+$/.test(filterCodigo)) {
+      const novoCodigo = filterCodigo.replace(/0+$/, '');
+      setFilterCodigo(novoCodigo);
+    }
+    
+    // Usa setTimeout para garantir que o estado é atualizado antes da busca
+    setTimeout(() => {
+      setSkip(0);
+      setData([]);
+      fetchData(0, false);
+    }, 100);
   };
 
   const handleObsoletoChange = (checked: boolean) => {
     setIsObsoleto(checked ? "S":"N");
   }
   
-
   const handleClearProductNameFilter = () => {
     setFilterNome("");
     setSkip(0);
     setData([]);
     fetchData(0, false);
   };
+  
   const handleClearProductCodeFilter = () => {
     setFilterCodigo("");
     setSkip(0);
     setData([]);
     fetchData(0, false);
   };
+  
   // Função de busca por item obsoleto
   const handleSearchByItemObsoleto = () => {
     setSkip(0);
@@ -206,6 +219,7 @@ export function CatalogPage() {
     // Dispara busca quando o filtro de obsoleto muda
     handleSearchByItemObsoleto();
   }, [isObsoleto]);
+  
   // SCROLL INFINITO
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -341,48 +355,10 @@ export function CatalogPage() {
     <div className="w-full px-5">
       <Header title="Catálogo de Produtos" />
       <div className="flex flex-col sm:flex-row items-center py-4 gap-4">
-        {/* Filtro por nome */}
-        <div className="flex flex-col w-full max-w-lg">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar por nome do produto
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                placeholder="Digite o nome do produto"
-                value={filterNome}
-                onChange={(event) => setFilterNome(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    handleSearchByName();
-                  }
-                }}
-                className="rounded-2xl w-full pr-10"
-              />
-              {filterNome !== "" && (
-                <button
-                  type="button"
-                  onClick={handleClearProductNameFilter}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  aria-label="Limpar campo de texto"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            <button
-              onClick={handleSearchByName}
-              className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
-            >
-              Buscar
-            </button>
-          </div>
-        </div>
-
         {/* Filtro por código */}
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar por código do produto
+            Filtrar por código do insumo
           </label>
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -418,6 +394,44 @@ export function CatalogPage() {
             </div>
             <button
               onClick={handleSearchByCode}
+              className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
+            >
+              Buscar
+            </button>
+          </div>
+        </div>
+
+        {/* Filtro por nome */}
+        <div className="flex flex-col w-full max-w-lg">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Filtrar por especificação do insumo
+          </label>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Input
+                placeholder="Digite o nome do produto"
+                value={filterNome}
+                onChange={(event) => setFilterNome(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    handleSearchByName();
+                  }
+                }}
+                className="rounded-2xl w-full pr-10"
+              />
+              {filterNome !== "" && (
+                <button
+                  type="button"
+                  onClick={handleClearProductNameFilter}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  aria-label="Limpar campo de texto"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <button
+              onClick={handleSearchByName}
               className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
             >
               Buscar
