@@ -10,11 +10,12 @@ import { isValidCPF } from "@/utils/validateCpf";
 type SelectedProduct = {
   id: number;
   codigo_pedido: string;
-  codigo_produto: string;
-  nome_produto: string;
-  centro_custo: string;
+  Insumo_Cod: number;
+  SubInsumo_Cod: number;
+  SubInsumo_Especificacao: string;
+  // centro_custo: string;
   nome_funcionario_1: string;
-  unidade: string | null;
+  Unid_Cod: string;
   quantidade: number;
   destino: string;
 };
@@ -28,7 +29,6 @@ type SelectedProductsProps = {
 
 export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemoveProduct, onSendProductsSuccess }: SelectedProductsProps) => {
   const { toast } = useToast();
-  const [matricula, setMatricula] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cpf, setCpf] = useState("");
@@ -52,15 +52,15 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
   const handleSend = async () => {
     setLoadingSendProducts(true);
     const dataToSend = {
-      matricula: matricula,
       cpf: cpf,
       produtos: selectedProducts.map((product) => ({
         codigo_pedido: product.codigo_pedido,
-        codigo_produto: product.codigo_produto,
-        nome_produto: product.nome_produto,
-        centro_custo: product.centro_custo,
+        Insumo_Cod: product.Insumo_Cod,
+        SubInsumo_Cod: product.SubInsumo_Cod,
+        SubInsumo_Especificacao: product.SubInsumo_Especificacao.trim(),
+        // centro_custo: product.centro_custo,
         nome_funcionario_1: product.nome_funcionario_1,
-        unidade: product.unidade === "" ? null : product.unidade,
+        Unid_Cod: product.Unid_Cod.trim(),
         quantidade: product.quantidade,
         destino: product.destino,
       })),
@@ -100,7 +100,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     });
   };
 
-  const isSendButtonDisabled = !(matricula && cpf && !cpfError);
+  const isSendButtonDisabled = !(cpf && !cpfError);
 
   useEffect(() => {
     if (!showScanner) return;
@@ -185,22 +185,22 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               <label className="block text-sm font-medium text-gray-700">
                 Código do Produto
               </label>
-              <div className="mt-1 text-gray-900">{product.codigo_produto}</div>
+              <div className="mt-1 text-gray-900">{product.Insumo_Cod}</div>
             </div>
             {/* Nome do produto */}
             <div className="flex flex-col">
               <label className="block text-sm font-medium text-gray-700">
                 Nome do Produto
               </label>
-                <div className="mt-1 text-gray-900">{product.nome_produto}</div>
+                <div className="mt-1 text-gray-900">{product.SubInsumo_Especificacao}</div>
             </div>
             {/* Centro de Custo */}
-            <div className="flex flex-col">
+            {/* <div className="flex flex-col">
               <label className="block text-sm font-medium text-gray-700">
                 Centro de Custo
               </label>
               <div className="mt-1 text-gray-900">{product.centro_custo}</div>
-            </div>
+            </div> */}
             {/* Quantidade */}
             <div className="flex flex-col">
               <label className="block text-sm font-medium text-gray-700">
@@ -213,7 +213,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               <label className="block text-sm font-medium text-gray-700">
                 Unidade
               </label>
-              <div className="mt-1 text-gray-900">{product.unidade ? product.unidade : "-"}</div>
+              <div className="mt-1 text-gray-900">{product.Unid_Cod ? product.Unid_Cod : "-"}</div>
             </div>
             {/* Nome do funcionário */}
             <div className="flex flex-col">
@@ -232,7 +232,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
                 <button
                   className="pl-2 mr-1 text-black hover:text-gray-800 transition"
                   onClick={() => handleRemove(product.id)}
-                  aria-label={`Remover ${product.nome_produto}`}
+                  aria-label={`Remover ${product.SubInsumo_Especificacao}`}
                 >
                   <X size={20} className="mt-2 ml-3" />
                 </button>
@@ -242,21 +242,9 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         ))}
       </div>
 
-      {/* Campos de Matrícula e Cpf */}
+      {/* Campo Cpf */}
       <div className="mt-4 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Matrícula do funcionário que dará baixa
-            </label>
-            <Input
-              type="text"
-              value={matricula}
-              placeholder="Digite a matrícula"
-              onChange={(e) => setMatricula(e.target.value)}
-              className="mt-1 rounded-2xl"
-            />
-          </div>
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700">
               CPF

@@ -78,27 +78,26 @@ export const getWaitingList = async (params: GetWaitingListParams) => {
 export const removeProductFromWaitingList = async (
   codigo_pedido: string,
   Insumo_Cod: number,
-  SubInsumo_Cod: number,
-  centro_custo: string
+  SubInsumo_Cod: number
 ) => {
   const response = await api.delete(
-    `/lista-espera/${codigo_pedido}/${Insumo_Cod}/${SubInsumo_Cod}/${centro_custo}`
+    `/lista-espera/${codigo_pedido}/${Insumo_Cod}/${SubInsumo_Cod}}`
   );
   return response.data;
 };
 
 // Tabela Final
 interface FinalTableProps {
-  matricula: string;
   cpf: string;
   produtos: {
     codigo_pedido: string;
-    codigo_produto: string;
-    nome_produto: string;
-    centro_custo: string;
+    Insumo_Cod: number;
+    SubInsumo_Cod: number;
+    SubInsumo_Especificacao: string;
+    // centro_custo: string;
     quantidade: number;
     nome_funcionario_1: string;
-    unidade: string | null;
+    Unid_Cod: string;
     destino: string;
   }[];
 }

@@ -84,7 +84,6 @@ const ActionCell = ({
         produto.codigo_pedido,
         produto.Insumo_Cod,
         produto.SubInsumo_Cod,
-        produto.centro_custo
       );
       
       setData(prevData => 
