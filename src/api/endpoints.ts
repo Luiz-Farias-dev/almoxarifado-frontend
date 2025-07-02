@@ -30,6 +30,7 @@ interface GetProductsParams {
   skip?: number;
   limit?: number;
   Insumo_Cod?: string;
+  SubInsumo_Cod?: string;
   Unid_Cod?: string;
   SubInsumo_Especificacao?: string;
   INSUMO_ITEMOBSOLETO?: string;
