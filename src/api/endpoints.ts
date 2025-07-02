@@ -80,7 +80,7 @@ export const removeProductFromWaitingList = async (
   SubInsumo_Cod: number
 ) => {
   const response = await api.delete(
-    `/lista-espera/${codigo_pedido}/${Insumo_Cod}/${SubInsumo_Cod}}`
+    `/lista-espera/${codigo_pedido}/${Insumo_Cod}/${SubInsumo_Cod}`
   );
   return response.data;
 };
