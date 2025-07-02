@@ -107,7 +107,7 @@ const GenerateReportPage = () => {
             Gerar Relatório
           </h1>
           <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-1">
+            {/* <AccordionItem value="item-1">
               <AccordionTrigger>Relatório Planilha de Chegada</AccordionTrigger>
               <AccordionContent>
                 <div className="mb-2 text-sm text-gray-600 font-medium">
@@ -148,7 +148,7 @@ const GenerateReportPage = () => {
                   )}
                 </button>
               </AccordionContent>
-            </AccordionItem>
+            </AccordionItem> */}
             <AccordionItem value="item-2">
               <AccordionTrigger>Relatório Planilha de Saída</AccordionTrigger>
               <AccordionContent>
@@ -186,7 +186,7 @@ const GenerateReportPage = () => {
                 </button>
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="item-3">
+            {/* <AccordionItem value="item-3">
               <AccordionTrigger>
                 Relatório Planilha de Acurácia de Estoque
               </AccordionTrigger>
@@ -231,7 +231,7 @@ const GenerateReportPage = () => {
                   )}
                 </button>
               </AccordionContent>
-            </AccordionItem>
+            </AccordionItem> */}
           </Accordion>
         </div>
       </div>

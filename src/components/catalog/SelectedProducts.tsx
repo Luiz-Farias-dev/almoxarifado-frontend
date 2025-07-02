@@ -8,11 +8,11 @@ import { getNameFromToken } from "@/utils/tokenUtils";
 
 type SelectedProduct = {
   id: number;
-  codigo_produto: string;
-  nome_produto: string;
-  centro_custo: string;
+  Insumo_Cod: number;
+  SubInsumo_Cod: number;
+  Unid_Cod: string;
+  SubInsumo_Especificacao: string;
   quantidade: number;
-  unidade: string | null;
 };
 
 type SelectedProductsProps = {
@@ -60,13 +60,14 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
       nome_funcionario_1: nome || undefined,
       destino: destino,
       produtos: selectedProducts.map((product) => ({
-        codigo_produto: product.codigo_produto,
-        nome_produto: product.nome_produto,
-        centro_custo: product.centro_custo,
+        Insumo_Cod: product.Insumo_Cod,
+        SubInsumo_Cod: product.SubInsumo_Cod,
+        Unid_Cod: product.Unid_Cod.trim(),
+        SubInsumo_Especificacao: product.SubInsumo_Especificacao.trim(),
         quantidade: product.quantidade,
-        unidade: product.unidade,
       })),
     };
+    console.log("Payload a ser enviado:", JSON.stringify(dataToSend, null, 2))
 
     try {
       const response = await addProductToWaitingList(dataToSend);
@@ -129,29 +130,29 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               <label className="block text-sm font-medium text-gray-700">
                 Código do Produto
               </label>
-              <div className="mt-1 text-gray-900">{product.codigo_produto}</div>
+              <div className="mt-1 text-gray-900">{product.Insumo_Cod}</div>
             </div>
             {/* Nome do produto */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Nome do Produto
+                Especificação do Insumo
               </label>
-              <div className="mt-1 text-gray-900">{product.nome_produto}</div>
+              <div className="mt-1 text-gray-900">{product.SubInsumo_Especificacao}</div>
             </div>
             {/* Unidade */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Unidade
               </label>
-              <div className="mt-1 text-gray-900">{product.unidade || "-"}</div>
+              <div className="mt-1 text-gray-900">{product.Unid_Cod || "-"}</div>
             </div>
-            {/* Centro de Custo */}
+            {/* Centro de Custo
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Centro de Custo
               </label>
               <div className="mt-1 text-gray-900">{product.centro_custo}</div>
-            </div>
+            </div> */}
             {/* Quantidade */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -171,7 +172,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
                 <button
                     className="pl-2 mr-1 text-black hover:text-gray-800 transition"
                     onClick={() => handleRemove(product.id)}
-                    aria-label={`Remover ${product.nome_produto}`}
+                    aria-label={`Remover ${product.SubInsumo_Especificacao}`}
                   >
                   <X size={20} />
                 </button>
@@ -186,7 +187,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Nome do Funcionário
+              Nome do Almoxarife
             </label>
             <Input
               type="text"
@@ -212,6 +213,12 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         {/* Botão de Enviar */}
         <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mt-4">
           <button
+            onClick={() => navigate("/lista-espera")}
+            className="w-full sm:w-auto px-4 py-2 rounded-2xl text-yellow-500 border border-yellow-500 hover:bg-yellow-500 hover:text-white transition"
+          >
+            Ir para Lista de Espera
+          </button>
+          <button
             onClick={handleSend}
             disabled={isSendButtonDisabled}
             className={`w-full sm:w-auto px-4 py-2 rounded-2xl transition ${
@@ -226,12 +233,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               "Enviar Produtos"
             )}
           </button>
-          <button
-            onClick={() => navigate("/lista-espera")}
-            className="w-full sm:w-auto px-4 py-2 rounded-2xl text-yellow-500 border border-yellow-500 hover:bg-yellow-500 hover:text-white transition"
-          >
-            Ir para Lista de Espera
-          </button>
+          
         </div>
       </div>
     </div>

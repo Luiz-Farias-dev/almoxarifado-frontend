@@ -30,11 +30,21 @@ import Header from "../Header";
 
 export type Produto = {
   id: number;
-  codigo_produto: string;
-  nome_produto: string;
-  unidade: string | null;
-  centro_custo: string;
+  Insumo_Cod: number;
+  SubInsumo_Cod: number;
+  Unid_Cod: string;
+  SubInsumo_Especificacao: string;
+  INSUMO_ITEMOBSOLETO: string;
   data_att: string;
+};
+
+type SelectedProduct = {
+  id: number;
+  Insumo_Cod: number;
+  SubInsumo_Cod: number;
+  Unid_Cod: string;
+  SubInsumo_Especificacao: string;
+  quantidade: number;
 };
 
 export const columns: ColumnDef<Produto>[] = [
@@ -60,33 +70,34 @@ export const columns: ColumnDef<Produto>[] = [
     enableSorting: false,
     enableHiding: false,
   },
-  {
-    accessorKey: "codigo_produto",
-    header: "Código do Produto",
-    cell: ({ row }) => <div>{row.getValue("codigo_produto")}</div>,
-  },
-  {
-    accessorKey: "nome_produto",
-    header: "Nome do Produto",
-    cell: ({ row }) => <div>{row.getValue("nome_produto")}</div>,
-  },
-  {
-    accessorKey: "unidade",
-    header: "Unidade",
-    cell: ({ row }) => <div>{row.getValue("unidade")}</div>,
-  },
-  {
-    accessorKey: "centro_custo",
-    header: "Centro de Custo",
+  { 
+    accessorKey: "Insumo_Cod",
+    header: "Código do Insumo",
     cell: ({ row }) => {
-      return <div>{row.getValue("centro_custo")}</div>;
-    },
+      const produto = row.original;
+      return <div>{produto.Insumo_Cod}-{produto.SubInsumo_Cod}</div>;
+  },
   },
   {
-    accessorKey: "data_att",
+    accessorKey: "Unid_Cod",
+    header: "Unidade",
+    cell: ({ row }) => <div>{row.getValue("Unid_Cod")}</div>,
+  },
+  {
+    accessorKey: "SubInsumo_Especificacao",
+    header: "Especificação",
+    cell: ({ row }) => <div>{row.getValue("SubInsumo_Especificacao")}</div>,
+  },
+  {
+    accessorKey: "INSUMO_ITEMOBSOLETO",
+    header: "Item Obsoleto",
+    cell: ({ row }) => <div>{row.getValue("INSUMO_ITEMOBSOLETO")}</div>,
+  },
+  {
+    accessorKey: "Audit_Insert_Date",
     header: "Data de Atualização",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("data_att"));
+      const date = new Date(row.getValue("Audit_Insert_Date"));
       return <div>{date.toLocaleString()}</div>;
     },
   },
@@ -95,13 +106,14 @@ export const columns: ColumnDef<Produto>[] = [
 export function CatalogPage() {
   const [data, setData] = useState<Produto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  //Estado que controla Item Obsoleto
+  const [isObsoleto, setIsObsoleto] = useState<"S" | "N">("N");
   // Estados para paginação e filtros
   const [, setSkip] = useState(0);
   const limit = 100;
   // Estados para busca
   const [filterNome, setFilterNome] = useState("");
   const [filterCodigo, setFilterCodigo] = useState("");
-  const [filterCentroCusto, setFilterCentroCusto] = useState("");
   // Estado para controle do scanner
   const [showScanner, setShowScanner] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -113,29 +125,23 @@ export function CatalogPage() {
   const [rowSelection, setRowSelection] = useState<{ [key: string]: boolean }>(
     {}
   );
-  const [selectedProducts, setSelectedProducts] = useState<
-    {
-      id: number;
-      codigo_produto: string;
-      nome_produto: string;
-      centro_custo: string;
-      quantidade: number;
-      unidade: string | null;
-    }[]
-  >([]);
+  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
   // Referência para o contêiner com scroll (infinite scroll)
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // FUNÇÃO PRINCIPAL PARA BUSCAR DADOS
+  // FUNÇÃO PRINCIPAL PARA BUSCAR DADOS (ajustada)
   async function fetchData(newSkip: number, append: boolean) {
     setIsLoading(true);
     try {
+      // Remove zeros finais do filterCodigo antes da busca
+      const codigoBusca = filterCodigo.replace(/0+$/, '');
+      
       const response = await getProducts({
         skip: newSkip,
         limit,
-        nome_produto: filterNome,
-        codigo_produto: filterCodigo,
-        centro_custo: filterCentroCusto,
+        SubInsumo_Especificacao: filterNome,
+        Insumo_Cod: codigoBusca, // Usa o código ajustado
+        INSUMO_ITEMOBSOLETO: isObsoleto,
       });
 
       if (append) {
@@ -144,43 +150,59 @@ export function CatalogPage() {
         setData(response);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Erro ao buscar produtos:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao carregar os produtos",
+      });
     } finally {
       setIsLoading(false);
     }
   }
 
-  // DISPARAR BUSCA MANUALMENTE (botões de busca)
+  // DISPARAR BUSCA MANUALMENTE (botões de busca - ajustados)
   const handleSearchByName = () => {
     setSkip(0);
     setData([]);
     fetchData(0, false);
   };
+
   const handleSearchByCode = () => {
-    setSkip(0);
-    setData([]);
-    fetchData(0, false);
-  };
-  const handleSearchByCentroCusto = () => {
-    setSkip(0);
-    setData([]);
-    fetchData(0, false);
+    // Remove zeros finais e atualiza o estado
+    if (filterCodigo && /0+$/.test(filterCodigo)) {
+      const novoCodigo = filterCodigo.replace(/0+$/, '');
+      setFilterCodigo(novoCodigo);
+    }
+    
+    // Usa setTimeout para garantir que o estado é atualizado antes da busca
+    setTimeout(() => {
+      setSkip(0);
+      setData([]);
+      fetchData(0, false);
+    }, 100);
   };
 
+  const handleObsoletoChange = (checked: boolean) => {
+    setIsObsoleto(checked ? "S":"N");
+  }
+  
   const handleClearProductNameFilter = () => {
     setFilterNome("");
     setSkip(0);
     setData([]);
     fetchData(0, false);
   };
+  
   const handleClearProductCodeFilter = () => {
     setFilterCodigo("");
     setSkip(0);
     setData([]);
     fetchData(0, false);
   };
-  const handleClearCentroCustoFilter = () => {
-    setFilterCentroCusto("");
+  
+  // Função de busca por item obsoleto
+  const handleSearchByItemObsoleto = () => {
     setSkip(0);
     setData([]);
     fetchData(0, false);
@@ -190,7 +212,13 @@ export function CatalogPage() {
   useEffect(() => {
     fetchData(0, false);
   }, []);
-
+ 
+  //CONTROLE DE ESTADO DO CHECKBOX
+   useEffect(() => {
+    // Dispara busca quando o filtro de obsoleto muda
+    handleSearchByItemObsoleto();
+  }, [isObsoleto]);
+  
   // SCROLL INFINITO
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -326,48 +354,10 @@ export function CatalogPage() {
     <div className="w-full px-5">
       <Header title="Catálogo de Produtos" />
       <div className="flex flex-col sm:flex-row items-center py-4 gap-4">
-        {/* Filtro por nome */}
-        <div className="flex flex-col w-full max-w-lg">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar por nome do produto
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                placeholder="Digite o nome do produto"
-                value={filterNome}
-                onChange={(event) => setFilterNome(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    handleSearchByName();
-                  }
-                }}
-                className="rounded-2xl w-full pr-10"
-              />
-              {filterNome !== "" && (
-                <button
-                  type="button"
-                  onClick={handleClearProductNameFilter}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  aria-label="Limpar campo de texto"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            <button
-              onClick={handleSearchByName}
-              className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
-            >
-              Buscar
-            </button>
-          </div>
-        </div>
-
         {/* Filtro por código */}
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar por código do produto
+            Filtrar por código do insumo
           </label>
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -410,28 +400,28 @@ export function CatalogPage() {
           </div>
         </div>
 
-        {/* Filtro por centro de custo */}
+        {/* Filtro por nome */}
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar por centro de custo
+            Filtrar por especificação do insumo
           </label>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Input
-                placeholder="Digite o centro de custo"
-                value={filterCentroCusto}
-                onChange={(event) => setFilterCentroCusto(event.target.value)}
+                placeholder="Digite o nome do produto"
+                value={filterNome}
+                onChange={(event) => setFilterNome(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
-                    handleSearchByCentroCusto();
+                    handleSearchByName();
                   }
                 }}
                 className="rounded-2xl w-full pr-10"
               />
-              {filterCentroCusto !== "" && (
+              {filterNome !== "" && (
                 <button
                   type="button"
-                  onClick={handleClearCentroCustoFilter}
+                  onClick={handleClearProductNameFilter}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                   aria-label="Limpar campo de texto"
                 >
@@ -440,11 +430,26 @@ export function CatalogPage() {
               )}
             </div>
             <button
-              onClick={handleSearchByCentroCusto}
+              onClick={handleSearchByName}
               className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
             >
               Buscar
             </button>
+          </div>
+        </div>
+
+        {/* Filtro por item obsoleto */}
+        <div className="flex flex-col w-full max-w-lg">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Mostrar itens obsoletos
+          </label>
+          <div className="flex gap-2">
+              {/* Filtrar por item obsoleto */}
+             <Checkbox 
+                checked={isObsoleto === "S"}
+                onCheckedChange={handleObsoletoChange}
+                id="obsoleto-checkbox"
+              />
           </div>
         </div>
       </div>

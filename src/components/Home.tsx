@@ -28,20 +28,20 @@ const HomePage = () => {
               <PlusCircle className="w-5 h-5" />
               Adicionar Produtos ao Catálogo
             </button>
-            <button
+            {/* <button
               onClick={() => navigate("chegada-produtos")}
               className="w-full px-4 py-2 flex items-center gap-2 text-white bg-blue-800 hover:bg-blue-900 rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transform transition-transform duration-200 hover:scale-105"
             >
               <PackagePlus className="w-5 h-5" />
               Adicionar Produtos a Lista de chegada
-            </button>
-            <button
+            </button> */}
+            {/* <button
               onClick={() => navigate("acuracia-estoque")}
               className="w-full px-4 py-2 flex items-center gap-2 text-white bg-teal-500 hover:bg-teal-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-400 transform transition-transform duration-200 hover:scale-105"
             >
               <Layers className="w-5 h-5" />
               Acurácia de Estoque
-            </button>
+            </button> */}
             <button
               onClick={() => navigate("catalogo")}
               className="w-full px-4 py-2 flex items-center gap-2 text-white bg-green-500 hover:bg-green-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-400 transform transition-transform duration-200 hover:scale-105"

@@ -29,9 +29,10 @@ export const addProduct = async (data: any) => {
 interface GetProductsParams {
   skip?: number;
   limit?: number;
-  nome_produto?: string;
-  codigo_produto?: string;
-  centro_custo?: string;
+  Insumo_Cod?: string;
+  Unid_Cod?: string;
+  SubInsumo_Especificacao?: string;
+  INSUMO_ITEMOBSOLETO?: string;
 }
 export const getProducts = async (params: GetProductsParams) => {
   const response = await api.get("/catalogo-produtos/", {
@@ -45,11 +46,11 @@ interface WaitingListProps {
   nome_funcionario_1?: string;
   destino: string;
   produtos: {
-    codigo_produto: string;
-    nome_produto: string;
-    centro_custo: string;
+    Insumo_Cod: number;
+    SubInsumo_Cod: number;
+    SubInsumo_Especificacao: string;
     quantidade: number;
-    unidade: string | null;
+    Unid_Cod: string;
   }[];
 }
 export const addProductToWaitingList = async (data: WaitingListProps) => {
@@ -72,30 +73,30 @@ export const getWaitingList = async (params: GetWaitingListParams) => {
   return response.data;
 };
 
-// Remove produto da lista de espera
+// Remove produto da lista de espera (versão atualizada)
 export const removeProductFromWaitingList = async (
   codigo_pedido: string,
-  codigo_produto: string,
-  centro_custo: string
+  Insumo_Cod: number,
+  SubInsumo_Cod: number
 ) => {
   const response = await api.delete(
-    `/lista-espera/${codigo_pedido}/${codigo_produto}/${centro_custo}`
+    `/lista-espera/${codigo_pedido}/${Insumo_Cod}/${SubInsumo_Cod}}`
   );
   return response.data;
 };
 
 // Tabela Final
 interface FinalTableProps {
-  matricula: string;
   cpf: string;
   produtos: {
     codigo_pedido: string;
-    codigo_produto: string;
-    nome_produto: string;
-    centro_custo: string;
+    Insumo_Cod: number;
+    SubInsumo_Cod: number;
+    SubInsumo_Especificacao: string;
+    // centro_custo: string;
     quantidade: number;
     nome_funcionario_1: string;
-    unidade: string | null;
+    Unid_Cod: string;
     destino: string;
   }[];
 }
