@@ -12,7 +12,6 @@ type SelectedProduct = {
   SubInsumo_Cod: number;
   Unid_Cod: string;
   SubInsumo_Especificacao: string;
-  INSUMO_ITEMOBSOLETO: string;
   quantidade: number;
 };
 
@@ -65,7 +64,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         SubInsumo_Cod: product.SubInsumo_Cod,
         Unid_Cod: product.Unid_Cod.trim(),
         SubInsumo_Especificacao: product.SubInsumo_Especificacao.trim(),
-        INSUMO_ITEMOBSOLETO: product.INSUMO_ITEMOBSOLETO,
         quantidade: product.quantidade,
       })),
     };

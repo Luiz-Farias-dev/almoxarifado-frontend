@@ -66,6 +66,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
       })),
     };
     try {
+      console.log("Payload a ser enviado:", JSON.stringify(dataToSend, null, 2))
       const response = await addProductToFinalTable(dataToSend);
       handleSuccessToast(response);
       onSendProductsSuccess(selectedProducts.map((product) => product.id));

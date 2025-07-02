@@ -44,7 +44,6 @@ type SelectedProduct = {
   SubInsumo_Cod: number;
   Unid_Cod: string;
   SubInsumo_Especificacao: string;
-  INSUMO_ITEMOBSOLETO: string;
   quantidade: number;
 };
 

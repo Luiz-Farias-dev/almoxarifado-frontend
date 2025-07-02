@@ -51,7 +51,6 @@ interface WaitingListProps {
     SubInsumo_Especificacao: string;
     quantidade: number;
     Unid_Cod: string;
-    INSUMO_ITEMOBSOLETO?: string;
   }[];
 }
 export const addProductToWaitingList = async (data: WaitingListProps) => {
