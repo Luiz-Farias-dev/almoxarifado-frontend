@@ -130,17 +130,39 @@ export function CatalogPage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // FUNÇÃO PRINCIPAL PARA BUSCAR DADOS (ajustada)
-  async function fetchData(newSkip: number, append: boolean) {
-    setIsLoading(true);
-    try {
-      // Remove zeros finais do filterCodigo antes da busca
-      const codigoBusca = filterCodigo.replace(/0+$/, '');
+  async function fetchData(newSkip: number, append: boolean, rawCodigo: string = filterCodigo) {
+      setIsLoading(true);
+      try {
+        let codigoInsumo = "";
+        let codigoSubInsumo = "";
+        
+        //O USO DO rawCodigo É PARA QUE O FUNCIONAMENTO DE DAR CLEAR NO INPUT E ELE REFAZER A PESQUISA COM OS PARAMETROS VAZIOS PARA  RETORNAR TODOS OS INSUMOS ACONTEÇA
+        if (rawCodigo) {
+          // Verifica se o código tem o formato completo (ex: 123456-001)
+          if (rawCodigo.includes('-')) {
+            const partes = rawCodigo.split('-');
+            codigoInsumo = partes[0];
+            codigoSubInsumo = partes[1].charAt(0);// Primeiro dígito após o hífen
+          } 
+          // Trata códigos sem hífen (ex: 123456001)
+          else if (rawCodigo.length > 3) {
+            codigoInsumo = rawCodigo.slice(0, -3);
+            codigoSubInsumo = rawCodigo.slice(-3).charAt(0);
+
+          }
+          // Caso o código seja muito curto
+          else {
+            codigoInsumo = rawCodigo;
+          }
+        }
+
       
       const response = await getProducts({
         skip: newSkip,
         limit,
         SubInsumo_Especificacao: filterNome,
-        Insumo_Cod: codigoBusca, // Usa o código ajustado
+        Insumo_Cod: codigoInsumo,
+        SubInsumo_Cod: codigoSubInsumo,
         INSUMO_ITEMOBSOLETO: isObsoleto,
       });
 
@@ -198,7 +220,7 @@ export function CatalogPage() {
     setFilterCodigo("");
     setSkip(0);
     setData([]);
-    fetchData(0, false);
+    fetchData(0, false, "");
   };
   
   // Função de busca por item obsoleto
@@ -212,7 +234,7 @@ export function CatalogPage() {
   useEffect(() => {
     fetchData(0, false);
   }, []);
- 
+  
   //CONTROLE DE ESTADO DO CHECKBOX
    useEffect(() => {
     // Dispara busca quando o filtro de obsoleto muda
