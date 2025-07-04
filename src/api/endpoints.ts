@@ -46,6 +46,7 @@ export const getProducts = async (params: GetProductsParams) => {
 interface WaitingListProps {
   nome_funcionario_1?: string;
   destino: string;
+  centro_custo: string;
   produtos: {
     Insumo_Cod: number;
     SubInsumo_Cod: number;

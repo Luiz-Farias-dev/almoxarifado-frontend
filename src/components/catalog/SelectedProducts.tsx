@@ -1,10 +1,19 @@
 import { Dispatch, SetStateAction, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Copy, Check } from "lucide-react";
+import { X, Copy, Check, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import LoadingSpinner from "../LoadingSpinner";
 import { addProductToWaitingList } from "@/api/endpoints";
 import { getNameFromToken } from "@/utils/tokenUtils";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 type SelectedProduct = {
   id: number;
@@ -25,11 +34,56 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
   const navigate = useNavigate();
   const [nome, setNome] = useState<string | null>(null);
   const [destino, setDestino] = useState("");
+  const [centroCusto, setCentroCusto] = useState("");
   const [loadingSendProducts, setLoadingSendProducts] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [orderCode, setOrderCode] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  // Estados para os modais
+  const [isDestinoModalOpen, setIsDestinoModalOpen] = useState(false);
+  const [isCentroCustoModalOpen, setIsCentroCustoModalOpen] = useState(false);
+  const [filterDestino, setFilterDestino] = useState("");
+
+  // Lista de destinos
+  const destinos = [
+    "Almoxarifado Central",
+    "Oficina Mecânica",
+    "Laboratório Químico",
+    "Setor de Pintura",
+    "Montagem Final",
+    "Expedição",
+    "Recepção de Materiais",
+    "Sala de Ferramentas",
+    "Manutenção Elétrica",
+    "Setor de Qualidade",
+    "Depósito Temporário",
+    "Área de Retrabalho",
+    "Usinagem CNC",
+    "Soldagem",
+    "Tratamento Térmico",
+    "Linha de Produção 1",
+    "Linha de Produção 2",
+    "Linha de Produção 3",
+    "Setor de Embalagem",
+    "Laboratório de Metrologia",
+    "Estoque de Matéria-Prima",
+    "Estoque de Produtos Acabados",
+    "Setor de Limpeza",
+    "Refeitório",
+    "Administração",
+    "Sala de Reuniões",
+    "TI - Tecnologia da Informação",
+    "Engenharia",
+    "Controle de Qualidade",
+    "Segurança do Trabalho",
+    "Logística",
+    "Externa - Obra 01"
+  ];
+
+  // Lista de centros de custo (exemplo com apenas 1 opção)
+  const centrosCusto = ["Centro de Custo Único"];
 
   useEffect(() => {
     const name = getNameFromToken();
@@ -59,6 +113,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     const dataToSend = {
       nome_funcionario_1: nome || undefined,
       destino: destino,
+      centro_custo: centroCusto, // Adicionando centro de custo
       produtos: selectedProducts.map((product) => ({
         Insumo_Cod: product.Insumo_Cod,
         SubInsumo_Cod: product.SubInsumo_Cod,
@@ -76,6 +131,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
       setErrorMessage(null);
       setNome("");
       setDestino("");
+      setCentroCusto("");
     } catch (error) {
       setErrorMessage("Erro ao enviar dados. Tente novamente.");
       setSuccessMessage(null);
@@ -88,6 +144,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     selectedProducts.length > 0 &&
     nome &&
     destino &&
+    centroCusto && // Centro de custo agora é obrigatório
     selectedProducts.every((p) => p.quantidade > 0)
   );
 
@@ -95,6 +152,24 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     navigator.clipboard.writeText(orderCode || '');;
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 5000);
+  };
+
+  const handleSelectDestino = (destinoSelecionado: string) => {
+    setDestino(destinoSelecionado);
+    setIsDestinoModalOpen(false);
+  };
+
+  const handleClearDestino = () => {
+    setDestino("");
+  };
+
+  const handleSelectCentroCusto = (centro: string) => {
+    setCentroCusto(centro);
+    setIsCentroCustoModalOpen(false);
+  };
+
+  const handleClearCentroCusto = () => {
+    setCentroCusto("");
   };
 
   return (
@@ -146,13 +221,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               </label>
               <div className="mt-1 text-gray-900">{product.Unid_Cod || "-"}</div>
             </div>
-            {/* Centro de Custo
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Centro de Custo
-              </label>
-              <div className="mt-1 text-gray-900">{product.centro_custo}</div>
-            </div> */}
             {/* Quantidade */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -182,9 +250,9 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         ))}
       </div>
 
-      {/* Campos de Nome e Destino */}
+      {/* Campos de Nome, Destino e Centro de Custo */}
       <div className="mt-4 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Nome do Almoxarife
@@ -197,19 +265,67 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               className="mt-1 rounded-2xl"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Destino
-            </label>
-            <Input
-              type="text"
-              value={destino}
-              placeholder="Digite o destino"
-              onChange={(e) => setDestino(e.target.value)}
-              className="mt-1 rounded-2xl"
-            />
+          
+          {/* Destino e Centro de Custo lado a lado em telas maiores */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Campo de Destino */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Destino
+              </label>
+              {destino ? (
+                <div className="flex items-center mt-1">
+                  <div className="flex-1 bg-gray-100 px-4 py-2 rounded-2xl flex items-center justify-between">
+                    <span>{destino}</span>
+                    <button 
+                      onClick={handleClearDestino}
+                      className="text-gray-500 hover:text-gray-700 ml-2"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsDestinoModalOpen(true)}
+                  className="w-full mt-1 px-3 py-2 bg-blue-500 text-white text-sm rounded-2xl flex items-center justify-center hover:bg-blue-600 transition"
+                >
+                  <Plus size={14} className="mr-2" />
+                  Escolher Destino
+                </button>
+              )}
+            </div>
+            
+            {/* Campo de Centro de Custo */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Centro de Custo
+              </label>
+              {centroCusto ? (
+                <div className="flex items-center mt-1">
+                  <div className="flex-1 bg-gray-100 px-4 py-2 rounded-2xl flex items-center justify-between">
+                    <span>{centroCusto}</span>
+                    <button 
+                      onClick={handleClearCentroCusto}
+                      className="text-gray-500 hover:text-gray-700 ml-2"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsCentroCustoModalOpen(true)}
+                  className="w-full mt-1 px-3 py-2 bg-blue-500 text-white text-sm rounded-2xl flex items-center justify-center hover:bg-blue-600 transition"
+                >
+                  <Plus size={14} className="mr-2" />
+                  Escolher Centro de Custo
+                </button>
+              )}
+            </div>
           </div>
         </div>
+        
         {/* Botão de Enviar */}
         <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mt-4">
           <button
@@ -233,9 +349,100 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               "Enviar Produtos"
             )}
           </button>
-          
         </div>
       </div>
+
+  {/* Modal de Destino */}
+      <AlertDialog open={isDestinoModalOpen} onOpenChange={setIsDestinoModalOpen}>
+        <AlertDialogContent className="max-w-2xl flex flex-col">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Escolha o destino na lista abaixo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Selecione o destino para os produtos
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="p-4">
+            {/* Campo de filtro */}
+            <Input
+              placeholder="Filtrar destinos..."
+              value={filterDestino}
+              onChange={(e) => setFilterDestino(e.target.value)}
+              className="mb-4 rounded-2xl"
+            />
+            
+            {/* Lista de destinos com scroll */}
+            <div className="border rounded-lg overflow-auto max-h-[50vh]">
+              {destinos
+                .filter(destino => 
+                  destino.toLowerCase().includes(filterDestino.toLowerCase())
+                )
+                .map((destinoItem, index) => (
+                  <div 
+                    key={index}
+                    className={`p-3 border-b cursor-pointer flex items-center ${
+                      destino === destinoItem
+                        ? "bg-blue-50 border-l-4 border-l-blue-500" 
+                        : "hover:bg-gray-50"
+                    }`}
+                    onClick={() => handleSelectDestino(destinoItem)}
+                  >
+                    <span>{destinoItem}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+          
+          {/* Botão de Cancelar no rodapé */}
+          <AlertDialogFooter className="mt-2 px-6 pb-4">
+            <AlertDialogCancel 
+              onClick={() => setIsDestinoModalOpen(false)}
+              className="w-full"
+            >
+              Cancelar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Modal de Centro de Custo */}
+      <AlertDialog open={isCentroCustoModalOpen} onOpenChange={setIsCentroCustoModalOpen}>
+        <AlertDialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Escolha o centro de custo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Selecione o centro de custo para os produtos
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="p-4">
+            {/* Lista de centros de custo */}
+            <div className="border rounded-lg overflow-auto max-h-[300px]">
+              {centrosCusto.map((centro, index) => (
+                <div 
+                  key={index}
+                  className={`p-3 border-b cursor-pointer flex items-center ${
+                    centroCusto === centro
+                      ? "bg-blue-50 border-l-4 border-l-blue-500" 
+                      : "hover:bg-gray-50"
+                  }`}
+                  onClick={() => handleSelectCentroCusto(centro)}
+                >
+                  <span>{centro}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel 
+              onClick={() => setIsCentroCustoModalOpen(false)}
+            >
+              Cancelar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
