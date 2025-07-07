@@ -8,16 +8,11 @@ import { addProductToFinalTable } from "@/api/endpoints";
 import { isValidCPF } from "@/utils/validateCpf";
 
 type SelectedProduct = {
-  id: number;
-  codigo_pedido: string;
-  Insumo_Cod: number;
-  SubInsumo_Cod: number;
-  SubInsumo_Especificacao: string;
-  // centro_custo: string;
-  nome_funcionario_1: string;
-  Unid_Cod: string;
+  Centro_Negocio_Cod: string;
+  Insumo_e_SubInsumo_Cod: string;
   quantidade: number;
   destino: string;
+  Observacao: string;
 };
 
 type SelectedProductsProps = {

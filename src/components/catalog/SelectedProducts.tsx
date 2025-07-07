@@ -113,7 +113,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     const dataToSend = {
       nome_funcionario_1: nome || undefined,
       destino: destino,
-      centro_custo: centroCusto, // Adicionando centro de custo
+      centro_custo: centroCusto,
       produtos: selectedProducts.map((product) => ({
         Insumo_Cod: product.Insumo_Cod,
         SubInsumo_Cod: product.SubInsumo_Cod,
@@ -290,7 +290,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
                   onClick={() => setIsDestinoModalOpen(true)}
                   className="w-full mt-1 px-3 py-2 bg-blue-500 text-white text-sm rounded-2xl flex items-center justify-center hover:bg-blue-600 transition"
                 >
-                  <Plus size={14} className="mr-2" />
                   Escolher Destino
                 </button>
               )}
@@ -318,7 +317,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
                   onClick={() => setIsCentroCustoModalOpen(true)}
                   className="w-full mt-1 px-3 py-2 bg-blue-500 text-white text-sm rounded-2xl flex items-center justify-center hover:bg-blue-600 transition"
                 >
-                  <Plus size={14} className="mr-2" />
                   Escolher Centro de Custo
                 </button>
               )}
