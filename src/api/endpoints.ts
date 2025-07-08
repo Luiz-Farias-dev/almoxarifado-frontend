@@ -159,3 +159,10 @@ export const generateReport = async (
   });
   return response;
 };
+
+//Pegar todos os centros de custo
+export const getCostCenter = async () => {
+  const response = await api.get("/cost-center/");
+
+  return response.data;
+};
