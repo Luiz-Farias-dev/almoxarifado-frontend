@@ -170,6 +170,10 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     setDestino("");
   };
 
+  const handleChooseCentroCusto = () => {
+    setIsCentroCustoModalOpen(true)
+  }
+
   const handleSelectCentroCusto = (centro: string) => {
     setCentroCusto(centro);
     setIsCentroCustoModalOpen(false);
