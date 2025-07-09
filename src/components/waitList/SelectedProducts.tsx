@@ -8,11 +8,16 @@ import { addProductToFinalTable } from "@/api/endpoints";
 import { isValidCPF } from "@/utils/validateCpf";
 
 type SelectedProduct = {
-  Centro_Negocio_Cod: string;
-  Insumo_e_SubInsumo_Cod: string;
+  id: number;
+  centro_custo: {
+    Centro_Negocio_Cod: string;
+    Centro_Nome: string;
+  }; 
+  Insumo_Cod: number;
+  SubInsumo_Cod: number;
   quantidade: number;
   destino: string;
-  Observacao: string;
+
 };
 
 type SelectedProductsProps = {
@@ -44,22 +49,22 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     }
   };
 
+  // Função que formata o Insumo_Cod e SubInsumo_Cod para ficar na formatação que o MateriaisSaidaItens quer/aceita.
+  const generateCombinedCode = (insumoCod: number, subInsumoCod: number) => {
+   return `${insumoCod.toString().padStart(4, '0')}-${subInsumoCod.toString().padStart(4, '0')}`;
+  };
+
   const handleSend = async () => {
     setLoadingSendProducts(true);
     const dataToSend = {
-      cpf: cpf,
       produtos: selectedProducts.map((product) => ({
-        codigo_pedido: product.codigo_pedido,
-        Insumo_Cod: product.Insumo_Cod,
-        SubInsumo_Cod: product.SubInsumo_Cod,
-        SubInsumo_Especificacao: product.SubInsumo_Especificacao.trim(),
-        // centro_custo: product.centro_custo,
-        nome_funcionario_1: product.nome_funcionario_1,
-        Unid_Cod: product.Unid_Cod.trim(),
+        Centro_Negocio_Cod: product.centro_custo.Centro_Negocio_Cod,
+        Insumo_e_SubInsumo_Cod: generateCombinedCode(product.Insumo_Cod, product.SubInsumo_Cod),
         quantidade: product.quantidade,
         destino: product.destino,
       })),
     };
+
     try {
       console.log("Payload a ser enviado:", JSON.stringify(dataToSend, null, 2))
       const response = await addProductToFinalTable(dataToSend);

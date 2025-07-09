@@ -94,13 +94,13 @@ export const removeProductFromWaitingList = async (
 
 // Tabela Final
 interface FinalTableProps {
-  cpf: string;
+  cpf?: string; // Opcional
   produtos: {
     Centro_Negocio_Cod: string;
     Insumo_e_SubInsumo_Cod: string;
     quantidade: number;
     destino: string;
-    Observacao: string;
+    Observacao?: string; // Opcional
   }[];
 }
 export const addProductToFinalTable = async (data: FinalTableProps) => {
