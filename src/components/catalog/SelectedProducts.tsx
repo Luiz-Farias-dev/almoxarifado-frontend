@@ -1,9 +1,9 @@
 import { Dispatch, SetStateAction, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Copy, Check, Plus } from "lucide-react";
+import { X, Copy, Check} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import LoadingSpinner from "../LoadingSpinner";
-import { addProductToWaitingList } from "@/api/endpoints";
+import { addProductToWaitingList, getAllCostCenter } from "@/api/endpoints";
 import { getNameFromToken } from "@/utils/tokenUtils";
 import {
   AlertDialog,
@@ -30,11 +30,19 @@ type SelectedProductsProps = {
   onRemoveProduct: (id: number) => void;
 };
 
+type CentrosCustoProps = {
+  Centro_Negocio_Cod: string;
+  Centro_Nome: string;
+}
+
 export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemoveProduct }: SelectedProductsProps) => {
   const navigate = useNavigate();
   const [nome, setNome] = useState<string | null>(null);
   const [destino, setDestino] = useState("");
-  const [centroCusto, setCentroCusto] = useState("");
+  // Centro de custo escolhido a ser enviado para a lista de espera
+  const [centroCustoSelected, setCentroCustoSelected] = useState<CentrosCustoProps | null>(null);
+  // Centros de Custo que são carregados do backend para ser escolhidos
+  const [centrosCusto, setCentrosCusto] = useState<CentrosCustoProps[]>([]);
   const [loadingSendProducts, setLoadingSendProducts] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [orderCode, setOrderCode] = useState<string | null>(null);
@@ -89,12 +97,10 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
   "Solar - Compras"
 ];
 
-  // Lista de centros de custo (exemplo com apenas 1 opção)
-  const centrosCusto = ["Centro de Custo Único"];
-
   useEffect(() => {
     const name = getNameFromToken();
     setNome(name);
+    fetchAllCostCenter()
   }, []);
 
   const handleInputChange = (
@@ -109,6 +115,16 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     );
   };
 
+  const fetchAllCostCenter = async () => {
+    try {
+      const response = await getAllCostCenter();
+      setCentrosCusto(response);
+    }
+    catch (error) {
+      console.error(error);
+    } 
+  }
+
   const handleRemove = (id: number) => {
     setSelectedProducts((prev) => prev.filter((product) => product.id !== id));
     onRemoveProduct(id);
@@ -120,7 +136,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     const dataToSend = {
       nome_funcionario_1: nome || undefined,
       destino: destino,
-      centro_custo: centroCusto,
+      centro_custo: centroCustoSelected || undefined,
       produtos: selectedProducts.map((product) => ({
         Insumo_Cod: product.Insumo_Cod,
         SubInsumo_Cod: product.SubInsumo_Cod,
@@ -138,7 +154,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
       setErrorMessage(null);
       setNome("");
       setDestino("");
-      setCentroCusto("");
+      setCentroCustoSelected(null);
     } catch (error) {
       setErrorMessage("Erro ao enviar dados. Tente novamente.");
       setSuccessMessage(null);
@@ -151,7 +167,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     selectedProducts.length > 0 &&
     nome &&
     destino &&
-    centroCusto && // Centro de custo agora é obrigatório
+    centroCustoSelected && // Centro de custo agora é obrigatório
     selectedProducts.every((p) => p.quantidade > 0)
   );
 
@@ -170,17 +186,13 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     setDestino("");
   };
 
-  const handleChooseCentroCusto = () => {
-    setIsCentroCustoModalOpen(true)
-  }
-
-  const handleSelectCentroCusto = (centro: string) => {
-    setCentroCusto(centro);
+  const handleSelectCentroCusto = (centro: CentrosCustoProps) => {
+    setCentroCustoSelected(centro);
     setIsCentroCustoModalOpen(false);
   };
 
   const handleClearCentroCusto = () => {
-    setCentroCusto("");
+    setCentroCustoSelected(null);
   };
 
   return (
@@ -311,10 +323,10 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               <label className="block text-sm font-medium text-gray-700">
                 Centro de Custo
               </label>
-              {centroCusto ? (
+              {centroCustoSelected ? (
                 <div className="flex items-center mt-1">
                   <div className="flex-1 bg-gray-100 px-4 py-2 rounded-2xl flex items-center justify-between">
-                    <span>{centroCusto}</span>
+                    <span>{centroCustoSelected.Centro_Nome}</span>
                     <button 
                       onClick={handleClearCentroCusto}
                       className="text-gray-500 hover:text-gray-700 ml-2"
@@ -431,13 +443,13 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
                 <div 
                   key={index}
                   className={`p-3 border-b cursor-pointer flex items-center ${
-                    centroCusto === centro
+                    centroCustoSelected?.Centro_Nome === centro.Centro_Nome
                       ? "bg-blue-50 border-l-4 border-l-blue-500" 
                       : "hover:bg-gray-50"
                   }`}
                   onClick={() => handleSelectCentroCusto(centro)}
                 >
-                  <span>{centro}</span>
+                  <span>{centro.Centro_Nome}</span>
                 </div>
               ))}
             </div>

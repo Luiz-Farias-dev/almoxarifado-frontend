@@ -1,5 +1,10 @@
 import api from "./axios";
 
+type CentrosCustoProps = {
+  Centro_Negocio_Cod: string;
+  Centro_Nome: string;
+};
+
 export const login = async (cpf: string, senha: string) => {
   const response = await api.post("/login/", { cpf, senha });
   return response;
@@ -46,7 +51,7 @@ export const getProducts = async (params: GetProductsParams) => {
 interface WaitingListProps {
   nome_funcionario_1?: string;
   destino: string;
-  centro_custo: string;
+  centro_custo?: CentrosCustoProps;
   produtos: {
     Insumo_Cod: number;
     SubInsumo_Cod: number;
@@ -161,7 +166,7 @@ export const generateReport = async (
 };
 
 //Pegar todos os centros de custo
-export const getCostCenter = async () => {
+export const getAllCostCenter = async () => {
   const response = await api.get("/cost-center/");
 
   return response.data;
