@@ -8,6 +8,10 @@ import { addProductToFinalTable } from "@/api/endpoints";
 import { isValidCPF } from "@/utils/validateCpf";
 
 type SelectedProduct = {
+  nome_funcionario_1: string;
+  Unid_Cod: string;
+  SubInsumo_Especificacao: string;
+  codigo_pedido: string;
   id: number;
   centro_custo: {
     Centro_Negocio_Cod: string;
@@ -51,7 +55,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
 
   // Função que formata o Insumo_Cod e SubInsumo_Cod para ficar na formatação que o MateriaisSaidaItens quer/aceita.
   const generateCombinedCode = (insumoCod: number, subInsumoCod: number) => {
-   return `${insumoCod.toString().padStart(4, '0')}-${subInsumoCod.toString().padStart(4, '0')}`;
+   return `${insumoCod.toString().padStart(3, '0')}-${subInsumoCod.toString().padStart(3, '0')}`;
   };
 
   const handleSend = async () => {
