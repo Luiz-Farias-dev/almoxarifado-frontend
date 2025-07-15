@@ -11,7 +11,7 @@ type SelectedProduct = {
   nome_funcionario_1: string;
   Unid_Cod: string;
   SubInsumo_Especificacao: string;
-  codigo_pedido: string;
+  codigo_pedido: number;
   id: number;
   centro_custo: {
     Centro_Negocio_Cod: string;
@@ -64,6 +64,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
       produtos: selectedProducts.map((product) => ({
         Centro_Negocio_Cod: product.centro_custo.Centro_Negocio_Cod,
         Insumo_e_SubInsumo_Cod: generateCombinedCode(product.Insumo_Cod, product.SubInsumo_Cod),
+        codigo_pedido: product.codigo_pedido,
         quantidade: product.quantidade,
         destino: product.destino,
       })),

@@ -98,6 +98,7 @@ interface FinalTableProps {
   produtos: {
     Centro_Negocio_Cod: string;
     Insumo_e_SubInsumo_Cod: string;
+    codigo_pedido: number;
     quantidade: number;
     destino: string;
     Observacao?: string; // Opcional
