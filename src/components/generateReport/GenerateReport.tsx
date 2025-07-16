@@ -15,7 +15,7 @@ import { generateReport } from "@/api/endpoints";
 
 const GenerateReportPage = () => {
   const { toast } = useToast();
-  const [dataChegada, setDataChegada] = useState<DateRange | undefined>({
+  const [dataChegada] = useState<DateRange | undefined>({
     from: new Date(),
     to: addDays(new Date(), 0),
   });
@@ -23,7 +23,7 @@ const GenerateReportPage = () => {
     from: new Date(),
     to: addDays(new Date(), 0),
   });
-  const [dataInventario, setDataInventario] = useState<DateRange | undefined>({
+  const [dataInventario] = useState<DateRange | undefined>({
     from: new Date(),
     to: addDays(new Date(), 0),
   });

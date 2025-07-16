@@ -1,6 +1,6 @@
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
-import { PlusCircle, CircleUserRound , PackagePlus, Layers, Box, List, FileText } from "lucide-react";
+import { PlusCircle, CircleUserRound, Box, List, FileText } from "lucide-react";
 
 const HomePage = () => {
   const navigate = useNavigate();
