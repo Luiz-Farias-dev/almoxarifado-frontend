@@ -39,6 +39,7 @@ interface GetProductsParams {
   Unid_Cod?: string;
   SubInsumo_Especificacao?: string;
   INSUMO_ITEMOBSOLETO?: string;
+  nome_produto?: string;
 }
 export const getProducts = async (params: GetProductsParams) => {
   const response = await api.get("/catalogo-produtos/", {

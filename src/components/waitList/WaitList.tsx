@@ -17,7 +17,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger, // Importação adicionada
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -40,20 +40,19 @@ import {
 import { MoreHorizontal, Trash2 } from "lucide-react";
 import { getWaitingList, removeProductFromWaitingList } from "@/api/endpoints";
 import LoadingSpinner from "../LoadingSpinner";
-import { SelectedProducts } from "./SelectedProducts";
+import { SelectedProducts, SelectedProduct } from "./SelectedProducts";
 import Header from "../Header";
 
-// Tipo combinando campos do Catálogo e Lista de Espera
+// Tipo corrigido com quantidade obrigatória
 export type Produto = {
   id: number;
-  // Campos do Catálogo
   Insumo_Cod: number;
   SubInsumo_Cod: number;
   Unid_Cod: string;
   SubInsumo_Especificacao: string;
   data_att: string;
+  quantidade: number;
   
-  // Campos específicos da Lista de Espera
   codigo_pedido: string;
   centro_custo: {
     Centro_Negocio_Cod: string;
@@ -63,7 +62,7 @@ export type Produto = {
   destino: string;
 };
 
-// Componente para as ações (corrige o problema dos hooks)
+// Componente para as ações
 const ActionCell = ({
   row,
   setData,
@@ -209,7 +208,6 @@ export const columns = (
     accessorKey: "centro_custo",
     header: "Centro de Custo",
     cell: ({ row }) => {
-      // Acesse o objeto completo
       const centroCusto = row.getValue("centro_custo") as Produto["centro_custo"];
       return <div>{centroCusto.Centro_Nome}</div>;
     },
@@ -373,17 +371,20 @@ export function WaitListPage() {
       .filter(key => rowSelection[key])
       .map(key => parseInt(key, 10));
 
+    // Garantir que todos os produtos tenham quantidade definida
+    const newlySelected = data
+      .filter(produto => selectedIds.includes(produto.id))
+      .map(produto => ({
+        ...produto,
+        quantidade: produto.quantidade || 1
+      }));
+
+    // Manter produtos existentes que ainda estão selecionados
     const stillSelected = selectedProducts.filter(p => 
       selectedIds.includes(p.id)
     );
 
-    const newlySelected = data
-      .filter(produto => selectedIds.includes(produto.id))
-      .map(produto => {
-        const existing = stillSelected.find(p => p.id === produto.id);
-        return existing ? existing : { ...produto };
-      });
-
+    // Combinar e remover duplicatas
     const combinedSelected = [
       ...stillSelected,
       ...newlySelected.filter(
@@ -393,6 +394,39 @@ export function WaitListPage() {
 
     setSelectedProducts(combinedSelected);
   }, [rowSelection, data]);
+
+  // Funções de conversão segura
+  const convertToSelectedProduct = (produto: Produto): SelectedProduct => {
+    return {
+      ...produto,
+      // Converter propriedades conforme necessário
+      codigo_pedido: Number(produto.codigo_pedido)
+    };
+  };
+
+  const convertToProduto = (selected: SelectedProduct): Produto => {
+    return {
+      ...selected,
+      // Converter propriedades de volta
+      codigo_pedido: String(selected.codigo_pedido)
+    };
+  };
+
+  const handleSetSelectedProducts = (
+    newProducts: React.SetStateAction<SelectedProduct[]>
+  ) => {
+    if (typeof newProducts === "function") {
+      // Se for uma função (atualização baseada no estado anterior)
+      setSelectedProducts(prev => {
+        const convertedPrev = prev.map(convertToSelectedProduct);
+        const newSelected = newProducts(convertedPrev);
+        return newSelected.map(convertToProduto);
+      });
+    } else {
+      // Se for um array direto
+      setSelectedProducts(newProducts.map(convertToProduto));
+    }
+  };
 
   const table = useReactTable({
     data,
@@ -576,8 +610,8 @@ export function WaitListPage() {
       
       {selectedProducts.length > 0 && (
         <SelectedProducts
-          selectedProducts={selectedProducts}
-          setSelectedProducts={setSelectedProducts}
+          selectedProducts={selectedProducts.map(convertToSelectedProduct)}
+          setSelectedProducts={handleSetSelectedProducts}
           onRemoveProduct={(id) => {
             setRowSelection(prev => {
               const updated = { ...prev };
