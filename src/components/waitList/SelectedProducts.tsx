@@ -8,14 +8,17 @@ import { addProductToFinalTable } from "@/api/endpoints";
 import { isValidCPF } from "@/utils/validateCpf";
 
 type SelectedProduct = {
+  almoxarife_nome: string;
+  Unid_Cod: string;
+  SubInsumo_Especificacao: string;
+  codigo_pedido: number;
   id: number;
-  codigo_pedido: string;
+  centro_custo: {
+    Centro_Negocio_Cod: string;
+    Centro_Nome: string;
+  }; 
   Insumo_Cod: number;
   SubInsumo_Cod: number;
-  SubInsumo_Especificacao: string;
-  // centro_custo: string;
-  nome_funcionario_1: string;
-  Unid_Cod: string;
   quantidade: number;
   destino: string;
 };
@@ -49,22 +52,25 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     }
   };
 
+  // Função que formata o Insumo_Cod e SubInsumo_Cod para ficar na formatação que o MateriaisSaidaItens quer/aceita.
+  const generateCombinedCode = (insumoCod: number, subInsumoCod: number) => {
+   return `${insumoCod.toString().padStart(3, '0')}-${subInsumoCod.toString().padStart(3, '0')}`;
+  };
+
   const handleSend = async () => {
     setLoadingSendProducts(true);
     const dataToSend = {
       cpf: cpf,
       produtos: selectedProducts.map((product) => ({
+        Centro_Negocio_Cod: product.centro_custo.Centro_Negocio_Cod,
+        Insumo_e_SubInsumo_Cod: generateCombinedCode(product.Insumo_Cod, product.SubInsumo_Cod),
         codigo_pedido: product.codigo_pedido,
-        Insumo_Cod: product.Insumo_Cod,
-        SubInsumo_Cod: product.SubInsumo_Cod,
-        SubInsumo_Especificacao: product.SubInsumo_Especificacao.trim(),
-        // centro_custo: product.centro_custo,
-        nome_funcionario_1: product.nome_funcionario_1,
-        Unid_Cod: product.Unid_Cod.trim(),
         quantidade: product.quantidade,
         destino: product.destino,
+        almoxarife_nome: product.almoxarife_nome
       })),
     };
+
     try {
       console.log("Payload a ser enviado:", JSON.stringify(dataToSend, null, 2))
       const response = await addProductToFinalTable(dataToSend);
@@ -221,7 +227,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               <label className="block text-sm font-medium text-gray-700">
                 Nome do Funcionário
               </label>
-              <div className="mt-1 text-gray-900">{product.nome_funcionario_1}</div>
+              <div className="mt-1 text-gray-900">{product.almoxarife_nome}</div>
             </div>
             {/* Destino */}
             <div className="flex flex-col items-start">

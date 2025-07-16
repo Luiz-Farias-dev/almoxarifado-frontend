@@ -55,9 +55,11 @@ export type Produto = {
   
   // Campos específicos da Lista de Espera
   codigo_pedido: string;
-  centro_custo: string; // Mantido conforme solicitado
-  nome_funcionario_1: string;  // Renomeado de nome_funcionario_1
-  quantidade: number;
+  centro_custo: {
+    Centro_Negocio_Cod: string;
+    Centro_Nome: string;
+  }; 
+  almoxarife_nome: string;
   destino: string;
 };
 
@@ -206,12 +208,16 @@ export const columns = (
   {
     accessorKey: "centro_custo",
     header: "Centro de Custo",
-    cell: ({ row }) => <div>{row.getValue("centro_custo")}</div>,
+    cell: ({ row }) => {
+      // Acesse o objeto completo
+      const centroCusto = row.getValue("centro_custo") as Produto["centro_custo"];
+      return <div>{centroCusto.Centro_Nome}</div>;
+    },
   },
   {
-    accessorKey: "nome_funcionario_1",
+    accessorKey: "almoxarife_nome",
     header: "Nome do Almoxarife",
-    cell: ({ row }) => <div>{row.getValue("nome_funcionario_1")}</div>,
+    cell: ({ row }) => <div>{row.getValue("almoxarife_nome")}</div>,
   },
   {
     accessorKey: "Unid_Cod",

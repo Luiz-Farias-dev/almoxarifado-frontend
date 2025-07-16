@@ -1,5 +1,10 @@
 import api from "./axios";
 
+type CentrosCustoProps = {
+  Centro_Negocio_Cod: string;
+  Centro_Nome: string;
+};
+
 export const login = async (cpf: string, senha: string) => {
   const response = await api.post("/login/", { cpf, senha });
   return response;
@@ -44,8 +49,9 @@ export const getProducts = async (params: GetProductsParams) => {
 
 // Lista de Espera
 interface WaitingListProps {
-  nome_funcionario_1?: string;
+  almoxarife_nome?: string;
   destino: string;
+  centro_custo?: CentrosCustoProps;
   produtos: {
     Insumo_Cod: number;
     SubInsumo_Cod: number;
@@ -90,15 +96,13 @@ export const removeProductFromWaitingList = async (
 interface FinalTableProps {
   cpf: string;
   produtos: {
-    codigo_pedido: string;
-    Insumo_Cod: number;
-    SubInsumo_Cod: number;
-    SubInsumo_Especificacao: string;
-    // centro_custo: string;
+    Centro_Negocio_Cod: string;
+    Insumo_e_SubInsumo_Cod: string;
+    codigo_pedido: number;
     quantidade: number;
-    nome_funcionario_1: string;
-    Unid_Cod: string;
     destino: string;
+    Observacao?: string;
+    almoxarife_nome: string;
   }[];
 }
 export const addProductToFinalTable = async (data: FinalTableProps) => {
@@ -161,4 +165,11 @@ export const generateReport = async (
     responseType: "blob",
   });
   return response;
+};
+
+//Pegar todos os centros de custo
+export const getAllCostCenter = async () => {
+  const response = await api.get("/cost-center/");
+
+  return response.data;
 };
