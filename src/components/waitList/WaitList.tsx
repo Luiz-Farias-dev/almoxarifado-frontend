@@ -59,8 +59,7 @@ export type Produto = {
     Centro_Negocio_Cod: string;
     Centro_Nome: string;
   }; 
-  nome_funcionario_1: string;  // Renomeado de nome_funcionario_1
-  quantidade: number;
+  almoxarife_nome: string;
   destino: string;
 };
 
@@ -216,9 +215,9 @@ export const columns = (
     },
   },
   {
-    accessorKey: "nome_funcionario_1",
+    accessorKey: "almoxarife_nome",
     header: "Nome do Almoxarife",
-    cell: ({ row }) => <div>{row.getValue("nome_funcionario_1")}</div>,
+    cell: ({ row }) => <div>{row.getValue("almoxarife_nome")}</div>,
   },
   {
     accessorKey: "Unid_Cod",

@@ -49,7 +49,7 @@ export const getProducts = async (params: GetProductsParams) => {
 
 // Lista de Espera
 interface WaitingListProps {
-  nome_funcionario_1?: string;
+  almoxarife_nome?: string;
   destino: string;
   centro_custo?: CentrosCustoProps;
   produtos: {
@@ -94,14 +94,15 @@ export const removeProductFromWaitingList = async (
 
 // Tabela Final
 interface FinalTableProps {
-  cpf?: string; // Opcional
+  cpf: string;
   produtos: {
     Centro_Negocio_Cod: string;
     Insumo_e_SubInsumo_Cod: string;
     codigo_pedido: number;
     quantidade: number;
     destino: string;
-    Observacao?: string; // Opcional
+    Observacao?: string;
+    almoxarife_nome: string;
   }[];
 }
 export const addProductToFinalTable = async (data: FinalTableProps) => {

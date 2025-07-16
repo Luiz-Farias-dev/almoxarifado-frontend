@@ -134,7 +134,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
   const handleSend = async () => {
     setLoadingSendProducts(true);
     const dataToSend = {
-      nome_funcionario_1: nome || undefined,
+      almoxarife_nome: nome || undefined,
       destino: destino,
       centro_custo: centroCustoSelected || undefined,
       produtos: selectedProducts.map((product) => ({

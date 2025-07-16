@@ -8,7 +8,7 @@ import { addProductToFinalTable } from "@/api/endpoints";
 import { isValidCPF } from "@/utils/validateCpf";
 
 type SelectedProduct = {
-  nome_funcionario_1: string;
+  almoxarife_nome: string;
   Unid_Cod: string;
   SubInsumo_Especificacao: string;
   codigo_pedido: number;
@@ -21,7 +21,6 @@ type SelectedProduct = {
   SubInsumo_Cod: number;
   quantidade: number;
   destino: string;
-
 };
 
 type SelectedProductsProps = {
@@ -61,12 +60,14 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
   const handleSend = async () => {
     setLoadingSendProducts(true);
     const dataToSend = {
+      cpf: cpf,
       produtos: selectedProducts.map((product) => ({
         Centro_Negocio_Cod: product.centro_custo.Centro_Negocio_Cod,
         Insumo_e_SubInsumo_Cod: generateCombinedCode(product.Insumo_Cod, product.SubInsumo_Cod),
         codigo_pedido: product.codigo_pedido,
         quantidade: product.quantidade,
         destino: product.destino,
+        almoxarife_nome: product.almoxarife_nome
       })),
     };
 
@@ -226,7 +227,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               <label className="block text-sm font-medium text-gray-700">
                 Nome do Funcionário
               </label>
-              <div className="mt-1 text-gray-900">{product.nome_funcionario_1}</div>
+              <div className="mt-1 text-gray-900">{product.almoxarife_nome}</div>
             </div>
             {/* Destino */}
             <div className="flex flex-col items-start">
