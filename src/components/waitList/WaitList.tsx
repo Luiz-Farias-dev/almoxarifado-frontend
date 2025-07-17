@@ -40,7 +40,7 @@ import {
 import { MoreHorizontal, Trash2 } from "lucide-react";
 import { getWaitingList, removeProductFromWaitingList } from "@/api/endpoints";
 import LoadingSpinner from "../LoadingSpinner";
-import { SelectedProducts, SelectedProduct } from "./SelectedProducts";
+import { SelectedProducts } from "./SelectedProducts"; // Importação corrigida
 import Header from "../Header";
 
 // Tipo corrigido com quantidade obrigatória
@@ -58,6 +58,23 @@ export type Produto = {
     Centro_Negocio_Cod: string;
     Centro_Nome: string;
   }; 
+  almoxarife_nome: string;
+  destino: string;
+};
+
+// Tipo para SelectedProduct (definido localmente)
+type SelectedProduct = {
+  id: number;
+  Insumo_Cod: number;
+  SubInsumo_Cod: number;
+  Unid_Cod: string;
+  SubInsumo_Especificacao: string;
+  quantidade: number;
+  codigo_pedido: number; // Alterado para number para compatibilidade
+  centro_custo: {
+    Centro_Negocio_Cod: string;
+    Centro_Nome: string;
+  };
   almoxarife_nome: string;
   destino: string;
 };
@@ -399,7 +416,6 @@ export function WaitListPage() {
   const convertToSelectedProduct = (produto: Produto): SelectedProduct => {
     return {
       ...produto,
-      // Converter propriedades conforme necessário
       codigo_pedido: Number(produto.codigo_pedido)
     };
   };
@@ -407,7 +423,6 @@ export function WaitListPage() {
   const convertToProduto = (selected: SelectedProduct): Produto => {
     return {
       ...selected,
-      // Converter propriedades de volta
       codigo_pedido: String(selected.codigo_pedido)
     };
   };
