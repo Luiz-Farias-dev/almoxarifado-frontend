@@ -62,7 +62,7 @@ export type Produto = {
   destino: string;
 };
 
-// Tipo para SelectedProduct (definido localmente)
+// Tipo para SelectedProduct (definido localmente) - CORRIGIDO
 type SelectedProduct = {
   id: number;
   Insumo_Cod: number;
@@ -70,13 +70,14 @@ type SelectedProduct = {
   Unid_Cod: string;
   SubInsumo_Especificacao: string;
   quantidade: number;
-  codigo_pedido: number; // Alterado para number para compatibilidade
+  codigo_pedido: number;
   centro_custo: {
     Centro_Negocio_Cod: string;
     Centro_Nome: string;
   };
   almoxarife_nome: string;
   destino: string;
+  data_att: string; // Propriedade adicionada
 };
 
 // Componente para as ações
@@ -412,18 +413,20 @@ export function WaitListPage() {
     setSelectedProducts(combinedSelected);
   }, [rowSelection, data]);
 
-  // Funções de conversão segura
+  // Funções de conversão segura - CORRIGIDAS
   const convertToSelectedProduct = (produto: Produto): SelectedProduct => {
     return {
       ...produto,
-      codigo_pedido: Number(produto.codigo_pedido)
+      codigo_pedido: Number(produto.codigo_pedido),
+      data_att: produto.data_att // Garantindo que data_att é incluída
     };
   };
 
   const convertToProduto = (selected: SelectedProduct): Produto => {
     return {
       ...selected,
-      codigo_pedido: String(selected.codigo_pedido)
+      codigo_pedido: String(selected.codigo_pedido),
+      data_att: selected.data_att // Garantindo que data_att é incluída
     };
   };
 

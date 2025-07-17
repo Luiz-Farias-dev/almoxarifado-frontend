@@ -130,8 +130,8 @@ export function InventoryAccuracyPage() {
         skip: newSkip,
         limit,
         nome_produto: filterNome,
-        // CORREÇÃO: Alterado de codigo_produto para codigo
-        codigo: filterCodigo,
+        // CORREÇÃO: Alterado para 'codigo_produto'
+        codigo_produto: filterCodigo,
         centro_custo: filterCentroCusto,
       });
 

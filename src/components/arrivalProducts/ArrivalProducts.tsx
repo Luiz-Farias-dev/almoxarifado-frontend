@@ -93,17 +93,22 @@ export const columns: ColumnDef<Produto>[] = [
 export function ArrivalProductsPage() {
   const [data, setData] = useState<Produto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  // Estados para paginação e filtros
   const [, setSkip] = useState(0);
   const limit = 100;
-  // Estados para busca
+  
+  // Estados para os novos filtros
   const [filterNome, setFilterNome] = useState("");
   const [filterCodigo, setFilterCodigo] = useState("");
-  const [filterCentroCusto, setFilterCentroCusto] = useState("");
+  const [filterSubCodigo, setFilterSubCodigo] = useState("");
+  const [filterUnidade, setFilterUnidade] = useState("");
+  const [filterEspecificacao, setFilterEspecificacao] = useState("");
+  const [filterObsoleto, setFilterObsoleto] = useState("");
+
   // Estado para controle do scanner
   const [showScanner, setShowScanner] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
+  
   // Estados da tabela
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -119,20 +124,21 @@ export function ArrivalProductsPage() {
       unidade: string | null;
     }[]
   >([]);
-  // Referência para o contêiner com scroll (infinite scroll)
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // FUNÇÃO PRINCIPAL PARA BUSCAR DADOS
+  // Função para buscar produtos com os novos parâmetros
   async function fetchData(newSkip: number, append: boolean) {
     setIsLoading(true);
     try {
       const response = await getProducts({
         skip: newSkip,
         limit,
-        nome_produto: filterNome,
-        // CORREÇÃO: Alterado de 'codigo_produto' para 'codigo'
-        codigo: filterCodigo,
-        centro_custo: filterCentroCusto,
+        Insumo_Cod: filterCodigo,
+        SubInsumo_Cod: filterSubCodigo,
+        Unid_Cod: filterUnidade,
+        SubInsumo_Especificacao: filterEspecificacao,
+        INSUMO_ITEMOBSOLETO: filterObsoleto,
+        nome_produto: filterNome
       });
 
       if (append) {
@@ -142,64 +148,51 @@ export function ArrivalProductsPage() {
       }
     } catch (error) {
       console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao carregar produtos",
+      });
     } finally {
       setIsLoading(false);
     }
   }
 
-  // DISPARAR BUSCA MANUALMENTE (botões de busca)
-  const handleSearchByName = () => {
-    setSkip(0);
-    setData([]);
-    fetchData(0, false);
-  };
-  const handleSearchByCode = () => {
-    setSkip(0);
-    setData([]);
-    fetchData(0, false);
-  };
-  const handleSearchByCentroCusto = () => {
+  // Disparar busca
+  const handleSearch = () => {
     setSkip(0);
     setData([]);
     fetchData(0, false);
   };
 
-  const handleClearProductNameFilter = () => {
+  // Limpar todos os filtros
+  const handleClearFilters = () => {
     setFilterNome("");
-    setSkip(0);
-    setData([]);
-    fetchData(0, false);
-  };
-  const handleClearProductCodeFilter = () => {
     setFilterCodigo("");
-    setSkip(0);
-    setData([]);
-    fetchData(0, false);
-  };
-  const handleClearProductCentroCustoFilter = () => {
-    setFilterCentroCusto("");
+    setFilterSubCodigo("");
+    setFilterUnidade("");
+    setFilterEspecificacao("");
+    setFilterObsoleto("");
     setSkip(0);
     setData([]);
     fetchData(0, false);
   };
 
-  // BUSCA INICIAL
+  // Busca inicial
   useEffect(() => {
     fetchData(0, false);
   }, []);
 
-  // SCROLL INFINITO
+  // Scroll infinito
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container || data.length < 100) return;
 
     const handleScroll = () => {
-      // Se chegou próximo do fim, carrega mais
       if (
         container.scrollTop + container.clientHeight >=
         container.scrollHeight - 10
       ) {
-        // Próxima página
         setSkip((prevSkip) => {
           const newSkip = prevSkip + limit;
           fetchData(newSkip, true);
@@ -214,18 +207,14 @@ export function ArrivalProductsPage() {
     };
   }, [data.length]);
 
-  //SELEÇÃO DE PRODUTOS: mantém atualizada a lista de selecionados
+  // Atualizar produtos selecionados
   useEffect(() => {
-    // Obtemos IDs que estão marcados atualmente no rowSelection
     const selectedIds = Object.keys(rowSelection)
       .filter((key) => rowSelection[key])
       .map((key) => parseInt(key, 10));
   
-    // Primeiro, removemos do selectedProducts qualquer produto que não esteja mais selecionado
     const stillSelected = selectedProducts.filter((p) => selectedIds.includes(p.id));
   
-    // Agora, achamos os produtos que estão no "data" atual e foram marcados,
-    // mas ainda não estão no selectedProducts
     const newlySelected = data
       .filter((produto) => selectedIds.includes(produto.id))
       .map((produto) => {
@@ -233,7 +222,6 @@ export function ArrivalProductsPage() {
         return existing ? existing : { ...produto, quantidade: 0 };
       });
   
-    // Unificamos ambas as listas (removidos + adicionados)
     const combinedSelected = [
       ...stillSelected,
       ...newlySelected.filter(
@@ -244,6 +232,7 @@ export function ArrivalProductsPage() {
     setSelectedProducts(combinedSelected);
   }, [rowSelection, data]);
 
+  // Scanner QR Code
   useEffect(() => {
     if (!showScanner) return;
   
@@ -267,7 +256,19 @@ export function ArrivalProductsPage() {
           const code = jsQR(imageData.data, imageData.width, imageData.height);
           
           if (code) {
-            setFilterCodigo(code.data);
+            const qrData = code.data;
+            
+            // Identificar tipo de código pelo padrão
+            if (qrData.startsWith("INSUMO:")) {
+              setFilterCodigo(qrData.split(":")[1]);
+            } 
+            else if (qrData.startsWith("SUBINSUMO:")) {
+              setFilterSubCodigo(qrData.split(":")[1]);
+            }
+            else if (qrData.startsWith("UNIDADE:")) {
+              setFilterUnidade(qrData.split(":")[1]);
+            }
+            
             setShowScanner(false);
           }
         }
@@ -298,7 +299,7 @@ export function ArrivalProductsPage() {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [showScanner]);
+  }, [showScanner, toast]);
 
   const table = useReactTable({
     data,
@@ -322,74 +323,22 @@ export function ArrivalProductsPage() {
   return (
     <div className="w-full px-5">
       <Header title="Adicionar produtos a lista de chegada" />
-      <div className="flex flex-col sm:flex-row items-center py-4 gap-4">
-
-        {/* Filtro por nome */}
-        <div className="flex flex-col w-full max-w-lg">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar por nome do produto
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                placeholder="Digite o nome do produto"
-                value={filterNome}
-                onChange={(event) => setFilterNome(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    handleSearchByName();
-                  }
-                }}
-                className="rounded-2xl w-full pr-10"
-              />
-              {filterNome !== "" && (
-                <button
-                  type="button"
-                  onClick={handleClearProductNameFilter}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  aria-label="Limpar campo de texto"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            <button
-              onClick={handleSearchByName}
-              className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
-            >
-              Buscar
-            </button>
-          </div>
-        </div>
-
-        {/* Filtro por código */}
-        <div className="flex flex-col w-full max-w-lg">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar por código do produto
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                placeholder="Digite ou escaneie o código do produto"
-                value={filterCodigo}
-                onChange={(event) => setFilterCodigo(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    handleSearchByCode();
-                  }
-                }}
-                className="rounded-2xl w-full pr-10"
-              />
-              {filterCodigo !== "" ? (
-                <button
-                  type="button"
-                  onClick={handleClearProductCodeFilter}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  aria-label="Limpar campo de texto"
-                >
-                  ✕
-                </button>
-              ) : (
+      
+      <div className="flex flex-col py-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Filtro por código principal */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Código Insumo (QR)
+            </label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  placeholder="Código principal"
+                  value={filterCodigo}
+                  onChange={(e) => setFilterCodigo(e.target.value)}
+                  className="rounded-2xl w-full pr-10"
+                />
                 <button
                   type="button"
                   onClick={() => setShowScanner(true)}
@@ -397,53 +346,93 @@ export function ArrivalProductsPage() {
                 >
                   <Camera className="text-gray-500"/>
                 </button>
-              )}
+              </div>
             </div>
-            <button
-              onClick={handleSearchByCode}
-              className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
+          </div>
+
+          {/* Filtro por subcódigo */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Sub Código
+            </label>
+            <Input
+              placeholder="Código secundário"
+              value={filterSubCodigo}
+              onChange={(e) => setFilterSubCodigo(e.target.value)}
+              className="rounded-2xl"
+            />
+          </div>
+
+          {/* Filtro por unidade */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Código Unidade
+            </label>
+            <Input
+              placeholder="Código unidade"
+              value={filterUnidade}
+              onChange={(e) => setFilterUnidade(e.target.value)}
+              className="rounded-2xl"
+            />
+          </div>
+
+          {/* Filtro por nome */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nome do Produto
+            </label>
+            <Input
+              placeholder="Nome do produto"
+              value={filterNome}
+              onChange={(e) => setFilterNome(e.target.value)}
+              className="rounded-2xl"
+            />
+          </div>
+
+          {/* Filtro por especificação */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Especificação
+            </label>
+            <Input
+              placeholder="Especificações"
+              value={filterEspecificacao}
+              onChange={(e) => setFilterEspecificacao(e.target.value)}
+              className="rounded-2xl"
+            />
+          </div>
+
+          {/* Filtro por status obsoleto */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status Obsoleto
+            </label>
+            <select 
+              value={filterObsoleto}
+              onChange={(e) => setFilterObsoleto(e.target.value)}
+              className="rounded-2xl border p-2"
             >
-              Buscar
-            </button>
+              <option value="">Todos</option>
+              <option value="S">Sim</option>
+              <option value="N">Não</option>
+            </select>
           </div>
         </div>
 
-        {/* Filtro por centro de custo */}
-        <div className="flex flex-col w-full max-w-lg">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar por centro de custo
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                placeholder="Digite o centro de custo"
-                value={filterCentroCusto}
-                onChange={(event) => setFilterCentroCusto(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    handleSearchByCentroCusto();
-                  }
-                }}
-                className="rounded-2xl w-full pr-10"
-              />
-              {filterCentroCusto !== "" && (
-                <button
-                  type="button"
-                  onClick={handleClearProductCentroCustoFilter}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  aria-label="Limpar campo de texto"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            <button
-              onClick={handleSearchByCentroCusto}
-              className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
-            >
-              Buscar
-            </button>
-          </div>
+        <div className="flex gap-3">
+          <button
+            onClick={handleSearch}
+            className="bg-blue-500 text-white px-4 py-2 rounded-2xl hover:bg-blue-600"
+          >
+            Buscar Produtos
+          </button>
+          
+          <button
+            onClick={handleClearFilters}
+            className="bg-gray-300 px-4 py-2 rounded-2xl hover:bg-gray-400"
+          >
+            Limpar Filtros
+          </button>
         </div>
       </div>
 
@@ -492,7 +481,7 @@ export function ArrivalProductsPage() {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  Nenhum resultado encontrado.
+                  {isLoading ? "Carregando..." : "Nenhum resultado encontrado."}
                 </TableCell>
               </TableRow>
             )}
@@ -505,11 +494,13 @@ export function ArrivalProductsPage() {
           </div>
         )}
       </div>
+      
       {selectedProducts.length === 0 && (
         <div className="my-4 text-center text-gray-500">
           Selecione produtos para adicionar à lista de chegada.
         </div>
       )}
+      
       {selectedProducts.length > 0 && (
         <SelectedProducts
           selectedProducts={selectedProducts}
@@ -523,6 +514,7 @@ export function ArrivalProductsPage() {
           }}
         />
       )}
+      
       {showScanner && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-4 rounded-lg max-w-md w-full">
@@ -532,7 +524,7 @@ export function ArrivalProductsPage() {
               playsInline
             />
             <p className="text-center text-gray-600 text-sm mt-2">
-              Escaneie o QR Code do Código do produto, assim que o código for lido a câmera será fechada.
+              Escaneie o QR Code do produto
             </p>
             <button
               onClick={() => setShowScanner(false)}
