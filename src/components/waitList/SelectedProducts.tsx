@@ -7,7 +7,8 @@ import LoadingSpinner from "../LoadingSpinner";
 import { addProductToFinalTable } from "@/api/endpoints";
 import { isValidCPF } from "@/utils/validateCpf";
 
-type SelectedProduct = {
+// Exportando o tipo SelectedProduct
+export type SelectedProduct = {
   almoxarife_nome: string;
   Unid_Cod: string;
   SubInsumo_Especificacao: string;
@@ -201,13 +202,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               </label>
                 <div className="mt-1 text-gray-900">{product.SubInsumo_Especificacao}</div>
             </div>
-            {/* Centro de Custo */}
-            {/* <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-700">
-                Centro de Custo
-              </label>
-              <div className="mt-1 text-gray-900">{product.centro_custo}</div>
-            </div> */}
             {/* Quantidade */}
             <div className="flex flex-col">
               <label className="block text-sm font-medium text-gray-700">

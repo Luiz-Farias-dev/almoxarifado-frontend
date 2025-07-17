@@ -40,7 +40,7 @@ import {
 import { MoreHorizontal, Trash2 } from "lucide-react";
 import { getWaitingList, removeProductFromWaitingList } from "@/api/endpoints";
 import LoadingSpinner from "../LoadingSpinner";
-import { SelectedProducts } from "./SelectedProducts";
+import { SelectedProducts, SelectedProduct } from "./SelectedProducts"; // Importando o tipo exportado
 import Header from "../Header";
 
 export type Produto = {
@@ -60,21 +60,7 @@ export type Produto = {
   destino: string;
 };
 
-type SelectedProduct = {
-  almoxarife_nome: string;
-  Unid_Cod: string;
-  SubInsumo_Especificacao: string;
-  codigo_pedido: string;
-  id: number;
-  centro_custo: {
-    Centro_Negocio_Cod: string;
-    Centro_Nome: string;
-  }; 
-  Insumo_Cod: number;
-  SubInsumo_Cod: number;
-  quantidade: number;
-  destino: string;
-};
+// Removido o tipo SelectedProduct local (usaremos o importado)
 
 const ActionCell = ({
   row,
@@ -394,7 +380,8 @@ export function WaitListPage() {
           almoxarife_nome: produto.almoxarife_nome,
           Unid_Cod: produto.Unid_Cod,
           SubInsumo_Especificacao: produto.SubInsumo_Especificacao,
-          codigo_pedido: produto.codigo_pedido,
+          // Convertendo para number para compatibilidade
+          codigo_pedido: Number(produto.codigo_pedido),
           centro_custo: produto.centro_custo,
           Insumo_Cod: produto.Insumo_Cod,
           SubInsumo_Cod: produto.SubInsumo_Cod,
