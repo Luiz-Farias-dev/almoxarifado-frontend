@@ -42,14 +42,14 @@ function App() {
           path="/lista-espera"
           element={<PrivateRoute element={<WaitListPage />} />}
         />
-        <Route
+        {/* <Route
           path="/chegada-produtos"
           element={<PrivateRoute element={<ArrivalProductsPage />} />}
         />
         <Route
           path="/acuracia-estoque"
           element={<PrivateRoute element={<InventoryAccuracyPage />} />}
-        />
+        /> */}
         <Route
           path="/gerar-relatorio"
           element={<PrivateRoute element={<GenerateReportPage />} />}
