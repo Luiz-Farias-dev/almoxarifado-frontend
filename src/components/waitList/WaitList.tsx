@@ -40,10 +40,9 @@ import {
 import { MoreHorizontal, Trash2 } from "lucide-react";
 import { getWaitingList, removeProductFromWaitingList } from "@/api/endpoints";
 import LoadingSpinner from "../LoadingSpinner";
-import { SelectedProducts } from "./SelectedProducts"; // Importação corrigida
+import { SelectedProducts } from "./SelectedProducts";
 import Header from "../Header";
 
-// Tipo corrigido com quantidade obrigatória
 export type Produto = {
   id: number;
   Insumo_Cod: number;
@@ -52,35 +51,31 @@ export type Produto = {
   SubInsumo_Especificacao: string;
   data_att: string;
   quantidade: number;
-  
   codigo_pedido: string;
-  centro_custo: {
-    Centro_Negocio_Cod: string;
-    Centro_Nome: string;
-  }; 
-  almoxarife_nome: string;
-  destino: string;
-};
-
-// Tipo para SelectedProduct (definido localmente) - CORRIGIDO
-type SelectedProduct = {
-  id: number;
-  Insumo_Cod: number;
-  SubInsumo_Cod: number;
-  Unid_Cod: string;
-  SubInsumo_Especificacao: string;
-  quantidade: number;
-  codigo_pedido: number;
   centro_custo: {
     Centro_Negocio_Cod: string;
     Centro_Nome: string;
   };
   almoxarife_nome: string;
   destino: string;
-  data_att: string; // Propriedade adicionada
 };
 
-// Componente para as ações
+type SelectedProduct = {
+  almoxarife_nome: string;
+  Unid_Cod: string;
+  SubInsumo_Especificacao: string;
+  codigo_pedido: string;
+  id: number;
+  centro_custo: {
+    Centro_Negocio_Cod: string;
+    Centro_Nome: string;
+  }; 
+  Insumo_Cod: number;
+  SubInsumo_Cod: number;
+  quantidade: number;
+  destino: string;
+};
+
 const ActionCell = ({
   row,
   setData,
@@ -283,7 +278,8 @@ export function WaitListPage() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState<{ [key: string]: boolean }>({});
-  const [selectedProducts, setSelectedProducts] = useState<Produto[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
+  
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   async function fetchData(newSkip: number, append: boolean) {
@@ -309,7 +305,6 @@ export function WaitListPage() {
     }
   }
 
-  // Funções de busca
   const handleSearchByProductName = () => {
     setSkip(0);
     setData([]);
@@ -328,7 +323,6 @@ export function WaitListPage() {
     fetchData(0, false);
   };
   
-  // Funções de limpeza
   const handleClearProductNameFilter = () => {
     setFilterNomeProduto("");
     setSkip(0);
@@ -356,12 +350,10 @@ export function WaitListPage() {
     );
   };
 
-  // Busca inicial
   useEffect(() => {
     fetchData(0, false);
   }, []);
 
-  // Scroll infinito
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container || data.length < 100) return;
@@ -383,26 +375,34 @@ export function WaitListPage() {
     return () => container.removeEventListener("scroll", handleScroll);
   }, [data.length]);
 
-  // Atualizar produtos selecionados
   useEffect(() => {
     const selectedIds = Object.keys(rowSelection)
       .filter(key => rowSelection[key])
       .map(key => parseInt(key, 10));
 
-    // Garantir que todos os produtos tenham quantidade definida
-    const newlySelected = data
-      .filter(produto => selectedIds.includes(produto.id))
-      .map(produto => ({
-        ...produto,
-        quantidade: produto.quantidade || 1
-      }));
-
-    // Manter produtos existentes que ainda estão selecionados
     const stillSelected = selectedProducts.filter(p => 
       selectedIds.includes(p.id)
     );
 
-    // Combinar e remover duplicatas
+    const newlySelected = data
+      .filter(produto => selectedIds.includes(produto.id))
+      .map(produto => {
+        const existing = stillSelected.find(p => p.id === produto.id);
+        
+        return existing || {
+          id: produto.id,
+          almoxarife_nome: produto.almoxarife_nome,
+          Unid_Cod: produto.Unid_Cod,
+          SubInsumo_Especificacao: produto.SubInsumo_Especificacao,
+          codigo_pedido: produto.codigo_pedido,
+          centro_custo: produto.centro_custo,
+          Insumo_Cod: produto.Insumo_Cod,
+          SubInsumo_Cod: produto.SubInsumo_Cod,
+          quantidade: produto.quantidade,
+          destino: produto.destino,
+        };
+      });
+
     const combinedSelected = [
       ...stillSelected,
       ...newlySelected.filter(
@@ -412,39 +412,6 @@ export function WaitListPage() {
 
     setSelectedProducts(combinedSelected);
   }, [rowSelection, data]);
-
-  // Funções de conversão segura - CORRIGIDAS
-  const convertToSelectedProduct = (produto: Produto): SelectedProduct => {
-    return {
-      ...produto,
-      codigo_pedido: Number(produto.codigo_pedido),
-      data_att: produto.data_att // Garantindo que data_att é incluída
-    };
-  };
-
-  const convertToProduto = (selected: SelectedProduct): Produto => {
-    return {
-      ...selected,
-      codigo_pedido: String(selected.codigo_pedido),
-      data_att: selected.data_att // Garantindo que data_att é incluída
-    };
-  };
-
-  const handleSetSelectedProducts = (
-    newProducts: React.SetStateAction<SelectedProduct[]>
-  ) => {
-    if (typeof newProducts === "function") {
-      // Se for uma função (atualização baseada no estado anterior)
-      setSelectedProducts(prev => {
-        const convertedPrev = prev.map(convertToSelectedProduct);
-        const newSelected = newProducts(convertedPrev);
-        return newSelected.map(convertToProduto);
-      });
-    } else {
-      // Se for um array direto
-      setSelectedProducts(newProducts.map(convertToProduto));
-    }
-  };
 
   const table = useReactTable({
     data,
@@ -469,7 +436,6 @@ export function WaitListPage() {
     <div className="w-full px-5">
       <Header title="Lista de Espera" />
       <div className="flex flex-col sm:flex-row items-center py-4 gap-4">
-        {/* Filtro por código do pedido */}
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Filtrar por código do pedido
@@ -501,7 +467,6 @@ export function WaitListPage() {
           </div>
         </div>
 
-        {/* Filtro por nome do produto */}
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Filtrar por nome do produto
@@ -533,7 +498,6 @@ export function WaitListPage() {
           </div>
         </div>
 
-        {/* Filtro por Destino */}
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Filtrar destino
@@ -566,7 +530,6 @@ export function WaitListPage() {
         </div>
       </div>
 
-      {/* Tabela */}
       <div
         ref={scrollContainerRef}
         className="rounded-2xl border h-[600px] overflow-auto relative"
@@ -628,8 +591,8 @@ export function WaitListPage() {
       
       {selectedProducts.length > 0 && (
         <SelectedProducts
-          selectedProducts={selectedProducts.map(convertToSelectedProduct)}
-          setSelectedProducts={handleSetSelectedProducts}
+          selectedProducts={selectedProducts}
+          setSelectedProducts={setSelectedProducts}
           onRemoveProduct={(id) => {
             setRowSelection(prev => {
               const updated = { ...prev };
