@@ -34,8 +34,8 @@ export const addProduct = async (data: any) => {
 interface GetProductsParams {
   skip?: number;
   limit?: number;
-  Insumo_Cod?: string;
-  SubInsumo_Cod?: string;
+  Insumo_Cod?: number;
+  SubInsumo_Cod?: number;
   Unid_Cod?: string;
   SubInsumo_Especificacao?: string;
   INSUMO_ITEMOBSOLETO?: string;
@@ -71,7 +71,7 @@ interface GetWaitingListParams {
   limit?: number;
   codigo_pedido?: string;
   destino?: string;
-  nome_produto?: string;
+  SubInsumo_Especificacao?: string;
   centro_custo?: string;
 }
 export const getWaitingList = async (params: GetWaitingListParams) => {

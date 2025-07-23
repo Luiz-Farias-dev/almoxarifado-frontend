@@ -268,15 +268,21 @@ export function WaitListPage() {
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  async function fetchData(newSkip: number, append: boolean) {
+  async function fetchData(
+    newSkip: number, 
+    append: boolean, 
+    codigoPedido: string = filterCodigoPedido,
+    buscaDestimo: string = filterDestino,
+    buscaNomeProduto: string = filterNomeProduto,
+  ) {
     setIsLoading(true);
     try {
       const response = await getWaitingList({
         skip: newSkip,
         limit,
-        codigo_pedido: filterCodigoPedido || undefined,
-        destino: filterDestino || undefined,
-        nome_produto: filterNomeProduto || undefined,
+        codigo_pedido: codigoPedido || undefined,
+        destino: buscaDestimo || undefined,
+        SubInsumo_Especificacao: buscaNomeProduto || undefined,
       });
       console.log("Dados da API:", response);
       if (append) {
@@ -313,21 +319,21 @@ export function WaitListPage() {
     setFilterNomeProduto("");
     setSkip(0);
     setData([]);
-    fetchData(0, false);
+    fetchData(0, false, filterCodigoPedido, filterDestino, "");
   };
   
   const handleClearDestinyFilter = () => {
     setFilterDestino("");
     setSkip(0);
     setData([]);
-    fetchData(0, false);
+    fetchData(0, false, filterCodigoPedido, "", filterNomeProduto);
   };
   
   const handleClearOrderCodeFilter = () => {
     setFilterCodigoPedido("");
     setSkip(0);
     setData([]);
-    fetchData(0, false);
+    fetchData(0, false, "");
   };
 
   const handleRemoveProductFromTable = (removedProducts: number[]) => {
@@ -336,6 +342,7 @@ export function WaitListPage() {
     );
   };
 
+  // Carrega os dados assim que a página carrega
   useEffect(() => {
     fetchData(0, false);
   }, []);
@@ -421,7 +428,7 @@ export function WaitListPage() {
 
   return (
     <div className="w-full px-5">
-      <Header title="Lista de Espera" />
+      <Header title="Autorização de Requisição" />
       <div className="flex flex-col sm:flex-row items-center py-4 gap-4">
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -456,12 +463,12 @@ export function WaitListPage() {
 
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar por nome do produto
+            Filtrar por especificação do insumo
           </label>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Input
-                placeholder="Digite o nome do produto"
+                placeholder="Digite a especificação do insumo"
                 value={filterNomeProduto}
                 onChange={(e) => setFilterNomeProduto(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearchByProductName()}

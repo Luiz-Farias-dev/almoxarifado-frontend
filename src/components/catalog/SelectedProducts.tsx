@@ -449,7 +449,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
                   }`}
                   onClick={() => handleSelectCentroCusto(centro)}
                 >
-                  <span>{centro.Centro_Nome}</span>
+                  <span>{centro.Centro_Nome} - {centro.Centro_Negocio_Cod}</span>
                 </div>
               ))}
             </div>

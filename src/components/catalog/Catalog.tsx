@@ -143,11 +143,15 @@ export function CatalogPage() {
             const partes = rawCodigo.split('-');
             codigoInsumo = partes[0];
             codigoSubInsumo = partes[1].charAt(0);// Primeiro dígito após o hífen
+            console.log(codigoInsumo);
+            console.log(codigoSubInsumo);
           } 
           // Trata códigos sem hífen (ex: 123456001)
-          else if (rawCodigo.length > 3) {
+          else if (!rawCodigo.includes('-')) {
             codigoInsumo = rawCodigo.slice(0, -3);
             codigoSubInsumo = rawCodigo.slice(-3).charAt(0);
+            console.log(codigoInsumo);
+            console.log(codigoSubInsumo);
 
           }
           // Caso o código seja muito curto
@@ -161,8 +165,8 @@ export function CatalogPage() {
         skip: newSkip,
         limit,
         SubInsumo_Especificacao: filterNome,
-        Insumo_Cod: codigoInsumo,
-        SubInsumo_Cod: codigoSubInsumo,
+        Insumo_Cod: codigoInsumo ? parseInt(codigoInsumo, 10) : undefined,
+        SubInsumo_Cod: codigoSubInsumo ? parseInt(codigoSubInsumo, 10) : undefined,
         INSUMO_ITEMOBSOLETO: isObsoleto,
       });
 
@@ -191,18 +195,10 @@ export function CatalogPage() {
   };
 
   const handleSearchByCode = () => {
-    // Remove zeros finais e atualiza o estado
-    if (filterCodigo && /0+$/.test(filterCodigo)) {
-      const novoCodigo = filterCodigo.replace(/0+$/, '');
-      setFilterCodigo(novoCodigo);
-    }
-    
-    // Usa setTimeout para garantir que o estado é atualizado antes da busca
-    setTimeout(() => {
-      setSkip(0);
-      setData([]);
-      fetchData(0, false);
-    }, 100);
+    setFilterCodigo(filterCodigo);
+    setSkip(0);
+    setData([]);
+    fetchData(0, false);
   };
 
   const handleObsoletoChange = (checked: boolean) => {
@@ -374,7 +370,7 @@ export function CatalogPage() {
 
   return (
     <div className="w-full px-5">
-      <Header title="Catálogo de Produtos" />
+      <Header title="Requisição de Materiais" />
       <div className="flex flex-col sm:flex-row items-center py-4 gap-4">
         {/* Filtro por código */}
         <div className="flex flex-col w-full max-w-lg">
