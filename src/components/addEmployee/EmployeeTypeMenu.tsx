@@ -11,7 +11,7 @@ export function DropdownMenuRadioEmployeeType({ position, setPosition }: { posit
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="mt-1 block p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none">
+        <Button id="tipo_funcionario_trigger" variant="outline" className="mt-1 block p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none">
           {position || "Selecione o tipo de funcionário"}
         </Button>
       </DropdownMenuTrigger>
