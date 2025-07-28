@@ -128,10 +128,12 @@ const AddEmployeePage = () => {
               <label htmlFor="tipo_funcionario" className="block text-sm font-medium text-gray-700">
                 Tipo de Funcionário
               </label>
-              <DropdownMenuRadioEmployeeType 
+              <div id="id_teste">
+                <DropdownMenuRadioEmployeeType 
                 position={formData.tipo_funcionario} 
                 setPosition={(value: string) => setFormData({ ...formData, tipo_funcionario: value })} 
               />
+              </div>
             </div>
             <button
               type="submit"
