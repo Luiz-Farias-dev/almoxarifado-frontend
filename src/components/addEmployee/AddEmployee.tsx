@@ -128,12 +128,10 @@ const AddEmployeePage = () => {
               <label htmlFor="tipo_funcionario" className="block text-sm font-medium text-gray-700">
                 Tipo de Funcionário
               </label>
-              <div id="id_teste">
                 <DropdownMenuRadioEmployeeType 
                 position={formData.tipo_funcionario} 
                 setPosition={(value: string) => setFormData({ ...formData, tipo_funcionario: value })} 
-              />
-              </div>
+                />
             </div>
             <button
               type="submit"
@@ -145,6 +143,7 @@ const AddEmployeePage = () => {
               disabled={
                 !formData.nome || !formData.cpf || !formData.tipo_funcionario || loading
               }
+              id="cadastrar-funcionario"
             >
               {loading ? <LoadingSpinner message="Enviando..." /> : "Cadastrar Funcionário"}
             </button>
