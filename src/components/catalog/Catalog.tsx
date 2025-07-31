@@ -532,7 +532,7 @@ export function CatalogPage() {
       </div>
       {selectedProducts.length === 0 && (
         <div className="my-4 text-center text-gray-500">
-          Selecione produtos para adicionar à lista de espera.
+          Selecione materiais para adicionar à autorização de requisição.
         </div>
       )}
       {selectedProducts.length > 0 && (
