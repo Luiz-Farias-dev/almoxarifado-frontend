@@ -130,7 +130,7 @@ export function CatalogPage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // FUNÇÃO PRINCIPAL PARA BUSCAR DADOS (ajustada)
-  async function fetchData(newSkip: number, append: boolean, rawCodigo: string = filterCodigo) {
+  async function fetchData(newSkip: number, append: boolean, rawCodigo: string = filterCodigo, filterEspecificacao = filterNome) {
       setIsLoading(true);
       try {
         let codigoInsumo = "";
@@ -164,7 +164,7 @@ export function CatalogPage() {
       const response = await getProducts({
         skip: newSkip,
         limit,
-        SubInsumo_Especificacao: filterNome,
+        SubInsumo_Especificacao: filterEspecificacao,
         Insumo_Cod: codigoInsumo ? parseInt(codigoInsumo, 10) : undefined,
         SubInsumo_Cod: codigoSubInsumo ? parseInt(codigoSubInsumo, 10) : undefined,
         INSUMO_ITEMOBSOLETO: isObsoleto,
@@ -207,9 +207,9 @@ export function CatalogPage() {
   
   const handleClearProductNameFilter = () => {
     setFilterNome("");
-    setSkip(0);
+    setSkip(0); 
     setData([]);
-    fetchData(0, false);
+    fetchData(0, false, filterCodigo , "");
   };
   
   const handleClearProductCodeFilter = () => {
