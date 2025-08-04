@@ -10,9 +10,19 @@ export const login = async (cpf: string, senha: string) => {
   return response;
 };
 
-// Adicionar funcionário
+// Adicionar funcionário individual
 export const addEmployee = async (data: any) => {
   const response = await api.post("/upload-funcionario/", data);
+  return response.data;
+};
+
+// Adicionar arquivo com vários funcionários
+export const addEmployeesFile = async (file: FormData) => {
+  const response = await api.post("/upload-funcionarios/", file, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
   return response.data;
 };
 
@@ -25,11 +35,13 @@ export const addProductsFile = async (file: FormData) => {
   });
   return response.data;
 };
+
 // Adicionar produto unitário
 export const addProduct = async (data: any) => {
   const response = await api.post("/upload-produto-catalogo/", data);
   return response.data;
 };
+
 // Buscar todos os produtos
 interface GetProductsParams {
   skip?: number;
@@ -168,9 +180,8 @@ export const generateReport = async (
   return response;
 };
 
-//Pegar todos os centros de custo
+// Pegar todos os centros de custo
 export const getAllCostCenter = async () => {
   const response = await api.get("/cost-center/");
-
   return response.data;
 };
