@@ -67,7 +67,7 @@ const AddEmployeePage = () => {
       const response = await addEmployeesFile(formData);
       
       // Extrair dados da resposta
-      const { total_linhas, sucessos, erros, cpf_duplicados, cpf_invalidos } = response;
+      const { sucessos, erros, cpf_duplicados, cpf_invalidos } = response;
       
       // Calcular estatísticas
       const cadastrados = sucessos;
