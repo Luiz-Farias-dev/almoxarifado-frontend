@@ -11,6 +11,7 @@ import HomePage from "./components/Home";
 import NotFoundPage from "./components/NotFoundPage";
 import LoginPage from "./components/Login";
 import PrivateRoute from "./components/PrivateRoute";
+import AddCostCenter from "./components/addCostCenter/addCostCenter";
 
 // Run Vite
 // npm run dev
@@ -29,6 +30,10 @@ function App() {
         <Route
           path="/cadastrar-funcionario"
           element={<PrivateRoute element={<AddEmployeePage />} />}
+        />
+        <Route
+          path="/cadastrar-centro-custo"
+          element={<PrivateRoute element={<AddCostCenter />} />}
         />
         <Route
           path="/adicionar-produto"

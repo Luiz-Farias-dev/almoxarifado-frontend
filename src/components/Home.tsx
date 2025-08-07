@@ -21,6 +21,13 @@ const HomePage = () => {
               <CircleUserRound className="w-5 h-5" />
               Cadastrar Funcionário
             </button>
+             <button
+              onClick={() => navigate("cadastrar-centro-custo")}
+              className="w-full px-4 py-2 flex items-center gap-2 text-white bg-gray-500 hover:bg-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transform transition-transform duration-200 hover:scale-105"
+            >
+              <CircleUserRound className="w-5 h-5" />
+              Cadastrar Centro de Custo
+            </button>
             <button
               onClick={() => navigate("adicionar-produto")}
               className="w-full px-4 py-2 flex items-center gap-2 text-white bg-blue-500 hover:bg-blue-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 transform transition-transform duration-200 hover:scale-105"
