@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Accordion,
@@ -6,7 +6,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-// import { addCostCenter, addWork } from "@/api/endpoints";
+import { addCostCenter, addWork, getAllWorks } from "@/api/endpoints";
 import LoadingSpinner from "../LoadingSpinner";
 import Header from "../Header";
 
@@ -25,15 +25,30 @@ const AddCostCenter = () => {
     initials: ""
   });
   
-  // Lista de obras (simulada - na prática viria da API)
-  const [works, setWorks] = useState([
-    { id: "1", initials: "OBRA1", name: "Obra Alpha" },
-    { id: "2", initials: "OBRA2", name: "Obra Beta" },
-    { id: "3", initials: "OBRA3", name: "Obra Gamma" },
-  ]);
+  // Lista de obras (agora carregada da API)
+  const [works, setWorks] = useState<any[]>([]);
+  const [loadingWorks, setLoadingWorks] = useState(true);
   
   const [loadingCostCenter, setLoadingCostCenter] = useState(false);
   const [loadingWork, setLoadingWork] = useState(false);
+
+  // Carregar obras ao montar o componente
+  useEffect(() => {
+    const fetchWorks = async () => {
+      try {
+        setLoadingWorks(true);
+        const worksData = await getAllWorks();
+        setWorks(worksData);
+      } catch (error) {
+        console.error("Erro ao carregar obras:", error);
+        handleFailToast("Erro ao carregar obras. Tente novamente.");
+      } finally {
+        setLoadingWorks(false);
+      }
+    };
+    
+    fetchWorks();
+  }, []);
 
   const handleCostCenterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -49,10 +64,13 @@ const AddCostCenter = () => {
     e.preventDefault();
     
     try {
+      // Converter workId para número
+      const workId = Number(costCenterForm.workId);
+      
       await addCostCenter({
         code: costCenterForm.code,
         name: costCenterForm.name,
-        workId: costCenterForm.workId
+        workId: workId
       });
       
       handleSuccessToast("Centro de custo cadastrado com sucesso!");
@@ -72,19 +90,22 @@ const AddCostCenter = () => {
     setLoadingWork(true);
     e.preventDefault();
     
+    // Validar tamanho da sigla
+    if (workForm.initials.length < 3 || workForm.initials.length > 10) {
+      handleWarningToast("Sigla deve ter entre 3 e 10 caracteres");
+      setLoadingWork(false);
+      return;
+    }
+    
     try {
-      await addWork({
+      const response = await addWork({
         initials: workForm.initials
       });
       
       handleSuccessToast("Obra cadastrada com sucesso!");
-      // Atualizar a lista de obras com a nova obra cadastrada
-      const newWork = { 
-        id: (works.length + 1).toString(), 
-        initials: workForm.initials,
-        name: `Obra ${workForm.initials}`
-      };
-      setWorks([...works, newWork]);
+      
+      // Atualizar a lista de obras com a nova obra cadastrada da API
+      setWorks([...works, response]);
       setWorkForm({ initials: "" });
     } catch (error: any) {
       if (error.response && error.response.status === 400) {
@@ -174,21 +195,27 @@ const AddCostCenter = () => {
                     <label htmlFor="workId" className="block text-sm font-medium text-gray-700 mb-1">
                       Escolher Obra
                     </label>
-                    <select
-                      id="workId"
-                      name="workId"
-                      value={costCenterForm.workId}
-                      onChange={handleCostCenterChange}
-                      className="w-full p-2.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                      required
-                    >
-                      <option value="">Selecione uma obra</option>
-                      {works.map(work => (
-                        <option key={work.id} value={work.id}>
-                          {work.initials} - {work.name}
-                        </option>
-                      ))}
-                    </select>
+                    {loadingWorks ? (
+                      <div className="w-full p-2.5 border border-gray-300 rounded-xl bg-gray-50">
+                        <p className="text-gray-500 text-center">Carregando obras...</p>
+                      </div>
+                    ) : (
+                      <select
+                        id="workId"
+                        name="workId"
+                        value={costCenterForm.workId}
+                        onChange={handleCostCenterChange}
+                        className="w-full p-2.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                        required
+                      >
+                        <option value="">Selecione uma obra</option>
+                        {works.map(work => (
+                          <option key={work.id} value={work.id}>
+                            {work.initials} - {work.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                   
                   <button
@@ -232,18 +259,18 @@ const AddCostCenter = () => {
                       required
                     />
                     <p className="mt-2 text-xs text-gray-500">
-                      Utilize uma sigla única para identificar a obra
+                      Utilize uma sigla única com 3 a 10 caracteres
                     </p>
                   </div>
                   
                   <button
                     type="submit"
                     className={`w-full py-3 px-4 text-white font-medium rounded-xl shadow-sm focus:outline-none flex items-center justify-center ${
-                      workForm.initials
+                      workForm.initials && workForm.initials.length >= 3 && workForm.initials.length <= 10
                         ? "bg-green-600 hover:bg-green-700"
                         : "bg-gray-400 cursor-not-allowed"
                     } transition-colors duration-200`}
-                    disabled={!workForm.initials || loadingWork}
+                    disabled={!workForm.initials || workForm.initials.length < 3 || workForm.initials.length > 10 || loadingWork}
                   >
                     {loadingWork ? (
                       <LoadingSpinner message="Cadastrando..." />
