@@ -148,7 +148,7 @@ const AddCostCenter = () => {
       <div className="flex-1 items-center justify-center py-8">
         <div className="w-full max-w-md mx-auto p-6 bg-white rounded-2xl shadow-md">
           <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-            Administração de Centros de Custo e Obras
+            Cadastro de Centros de Custo e Obras
           </h1>
           
           <Accordion type="multiple" className="w-full" defaultValue={["item-1"]}>
@@ -170,7 +170,7 @@ const AddCostCenter = () => {
                       value={costCenterForm.code}
                       onChange={handleCostCenterChange}
                       className="w-full p-2.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Ex: CC001"
+                      placeholder="Ex: CTZ.00.0000"
                       required
                     />
                   </div>
@@ -186,7 +186,7 @@ const AddCostCenter = () => {
                       value={costCenterForm.name}
                       onChange={handleCostCenterChange}
                       className="w-full p-2.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Ex: Centro de Custo Administrativo"
+                      placeholder="Ex: Solar RMT"
                       required
                     />
                   </div>
@@ -287,9 +287,8 @@ const AddCostCenter = () => {
             <h3 className="text-sm font-semibold text-blue-800 mb-2">Informações importantes</h3>
             <ul className="text-xs text-blue-700 space-y-1">
               <li>• O código do centro de custo deve ser único</li>
-              <li>• Cada obra pode ter múltiplos centros de custo associados</li>
               <li>• A sigla da obra deve ter entre 3 e 10 caracteres</li>
-              <li>• Após cadastrar uma obra, ela estará disponível no dropdown</li>
+              <li>• Após cadastrar uma obra, ela estará disponível na opção "Selecione uma obra" na aba "Cadastar Centro de Custo"</li>
             </ul>
           </div>
         </div>
