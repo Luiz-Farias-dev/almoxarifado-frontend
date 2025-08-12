@@ -65,7 +65,7 @@ const AddCostCenter = () => {
     
     try {
       // Converter workId para número
-      const workId = Number(costCenterForm.workId);
+      const workId = costCenterForm.workId;
       
       await addCostCenter({
         code: costCenterForm.code,
