@@ -1,9 +1,17 @@
 import api from "./axios";
 
-type CentrosCustoProps = {
+interface WorkProps {
+  id: number;
+  initials: string;
+  name: string;
+}
+
+interface CostCenterProps {
   Centro_Negocio_Cod: string;
   Centro_Nome: string;
-};
+  work_id: number;
+  work?: WorkProps;
+}
 
 export const login = async (cpf: string, senha: string) => {
   const response = await api.post("/login/", { cpf, senha });
@@ -64,7 +72,7 @@ export const getProducts = async (params: GetProductsParams) => {
 interface WaitingListProps {
   almoxarife_nome?: string;
   destino: string;
-  centro_custo?: CentrosCustoProps;
+  centro_custo?: CostCenterProps;
   produtos: {
     Insumo_Cod: number;
     SubInsumo_Cod: number;
@@ -180,8 +188,58 @@ export const generateReport = async (
   return response;
 };
 
+// ===========================================
+// ENDPOINTS PARA OBRAS E CENTROS DE CUSTO
+// ===========================================
+
 // Pegar todos os centros de custo
 export const getAllCostCenter = async () => {
   const response = await api.get("/cost-center/");
+  return response.data;
+};
+
+// Criar um novo centro de custo
+export const addCostCenter = async (data: {
+  code: string;
+  name: string;
+  workId: string;
+}) => {
+  const response = await api.post("/cost-center/", {
+    code: data.code,
+    name: data.name,
+    workId: data.workId,
+  });
+  return response.data;
+};
+
+// Pegar um centro de custo por código
+export const getCostCenterByCode = async (centroCod: string) => {
+  const response = await api.get(`/cost-center/${centroCod}`);
+  return response.data;
+};
+
+// Deletar um centro de custo
+export const deleteCostCenter = async (centroCod: string) => {
+  const response = await api.delete(`/cost-center/${centroCod}`);
+  return response.data;
+};
+
+// Criar uma nova obra
+export const addWork = async (data: { initials: string }) => {
+  const response = await api.post("/work/", {
+    initials: data.initials,
+  });
+  return response.data;
+};
+
+// Pegar todas as obras
+export const getAllWorks = async () => {
+  const response = await api.get("/work/");
+  return response.data;
+};
+
+// Pegar uma obra por ID
+export const getWorkById = async (workId: number) => {
+  const response = await api.get(`/work/${workId}`);
   return response.data;
 };
