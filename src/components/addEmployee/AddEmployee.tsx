@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { addEmployee, addEmployeesFile } from "@/api/endpoints";
+import { addEmployee, addEmployeesFile, getAllWorks } from "@/api/endpoints";
 import { isValidCPF, formatCPF } from "@/utils/validateCpf";
 import {
   Accordion,
@@ -18,13 +18,33 @@ const AddEmployeePage = () => {
   const [cpfError, setCpfError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     nome: "",
-    matricula: "",
     cpf: "",
     tipo_funcionario: "",
   });
+  const [selectedWork, setSelectedWork] = useState<string>("");
+  const [works, setWorks] = useState<any[]>([]);
+  const [loadingWorks, setLoadingWorks] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [loadingForm, setLoadingForm] = useState<boolean>(false);
   const [loadingFile, setLoadingFile] = useState<boolean>(false);
+
+  // Buscar obras ao montar o componente
+  useEffect(() => {
+    const fetchWorks = async () => {
+      setLoadingWorks(true);
+      try {
+        const worksData = await getAllWorks();
+        setWorks(worksData);
+      } catch (error) {
+        console.error("Erro ao carregar obras:", error);
+        handleFailToast("Erro ao carregar obras. Tente novamente.");
+      } finally {
+        setLoadingWorks(false);
+      }
+    };
+    
+    fetchWorks();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -35,14 +55,19 @@ const AddEmployeePage = () => {
     setLoadingForm(true);
     e.preventDefault();
     try {
-      await addEmployee(formData);
+      // Se for almoxarife, incluir a obra_id
+      const dataToSend = formData.tipo_funcionario === "Almoxarife"
+        ? { ...formData, obra_id: selectedWork }
+        : formData;
+        
+      await addEmployee(dataToSend);
       handleSuccessToast("Funcionário cadastrado com sucesso!");
       setFormData({
         nome: "",
-        matricula: "",
         cpf: "",
         tipo_funcionario: "",
       });
+      setSelectedWork(""); // Resetar a obra selecionada
     } catch (error: any) {
       if (error.response?.status === 400) {
         handleFailToast("Funcionário já cadastrado com esse CPF.");
@@ -234,9 +259,9 @@ const AddEmployeePage = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-100 px-4">
       <Header />
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex-1 flex items-center justify-center"> {/* Centralizado vertical e horizontalmente */}
         <div className="w-full max-w-md p-6 bg-white rounded-2xl shadow-md">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4 self-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4 text-center"> {/* Texto centralizado */}
             Cadastrar Funcionário
           </h1>
           
@@ -260,20 +285,7 @@ const AddEmployeePage = () => {
                       required
                     />
                   </div>
-                  <div>
-                    <label htmlFor="matricula" className="block text-sm font-medium text-gray-700">
-                      Matrícula (Opcional)
-                    </label>
-                    <input
-                      type="text"
-                      id="matricula"
-                      name="matricula"
-                      value={formData.matricula}
-                      onChange={handleChange}
-                      className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Informe a matrícula"
-                    />
-                  </div>
+                  
                   <div>
                     <label htmlFor="cpf" className="block text-sm font-medium text-gray-700">
                       CPF
@@ -290,6 +302,7 @@ const AddEmployeePage = () => {
                     />
                     {cpfError && <p className="text-red-500 text-sm mt-1">{cpfError}</p>}
                   </div>
+                  
                   <div>
                     <label htmlFor="tipo_funcionario" className="block text-sm font-medium text-gray-700">
                       Tipo de Funcionário
@@ -299,15 +312,53 @@ const AddEmployeePage = () => {
                       setPosition={(value: string) => setFormData({ ...formData, tipo_funcionario: value })} 
                     />
                   </div>
+                  
+                  {/* Campo para selecionar a obra apenas se for Almoxarife */}
+                  {formData.tipo_funcionario === "Almoxarife" && (
+                    <div>
+                      <label htmlFor="obra_id" className="block text-sm font-medium text-gray-700">
+                        Obra do Almoxarife
+                      </label>
+                      {loadingWorks ? (
+                        <div className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl bg-gray-100">
+                          <p className="text-gray-500 text-center">Carregando obras...</p>
+                        </div>
+                      ) : (
+                        <select
+                          id="obra_id"
+                          name="obra_id"
+                          value={selectedWork}
+                          onChange={(e) => setSelectedWork(e.target.value)}
+                          className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          required
+                        >
+                          <option value="">Selecione uma obra</option>
+                          {works.map(work => (
+                            <option key={work.id} value={work.id}>
+                              {work.initials} - {work.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
+                  
                   <button
                     type="submit"
                     className={`w-full py-2 px-4 text-white font-medium rounded-2xl shadow-sm focus:outline-none flex items-center justify-center ${
-                      formData.nome && formData.cpf && formData.tipo_funcionario
+                      formData.nome && 
+                      formData.cpf && 
+                      formData.tipo_funcionario &&
+                      (formData.tipo_funcionario !== "Almoxarife" || selectedWork)
                         ? "bg-blue-500 hover:bg-blue-600"
                         : "bg-gray-400 cursor-not-allowed"
                     }`}
                     disabled={
-                      !formData.nome || !formData.cpf || !formData.tipo_funcionario || loadingForm
+                      !formData.nome || 
+                      !formData.cpf || 
+                      !formData.tipo_funcionario ||
+                      (formData.tipo_funcionario === "Almoxarife" && !selectedWork) ||
+                      loadingForm
                     }
                     id="cadastrar-funcionario"
                   >
