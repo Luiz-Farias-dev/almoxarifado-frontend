@@ -1,13 +1,33 @@
-import { jwtDecode } from "jwt-decode";
+// src/utils/tokenUtils.ts
+import {jwtDecode} from "jwt-decode";
 
-export const getNameFromToken = (): string | null => {
-  const token = localStorage.getItem("accessToken");
+export interface UserToken {
+  id: number;
+  nome: string;
+  tipo: string;
+  obra_id: number | null;
+}
+
+export function getUserInfoFromToken(): UserToken | null {
+  const token = localStorage.getItem('token');
   if (!token) return null;
-
+  
   try {
-    const decoded: { sub?: string } = jwtDecode(token);
-    return decoded.sub || null;
+    const decoded: any = jwtDecode(token);
+    return {
+      id: decoded.id,
+      nome: decoded.sub,
+      tipo: decoded.tipo,
+      obra_id: decoded.obra_id
+    };
   } catch (error) {
+    console.error("Erro ao decodificar token:", error);
     return null;
   }
-};
+}
+
+// Mantenha a função existente para nome se necessário
+export function getNameFromToken(): string | null {
+  const user = getUserInfoFromToken();
+  return user ? user.nome : null;
+}
