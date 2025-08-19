@@ -1,10 +1,10 @@
 import { Dispatch, SetStateAction, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Copy, Check} from "lucide-react";
+import { X, Copy, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import LoadingSpinner from "../LoadingSpinner";
 import { addProductToWaitingList, getAllCostCenter } from "@/api/endpoints";
-import { getNameFromToken } from "@/utils/tokenUtils";
+import { getUserInfoFromToken } from "@/utils/tokenUtils";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -14,6 +14,7 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 type SelectedProduct = {
   id: number;
@@ -33,15 +34,20 @@ type SelectedProductsProps = {
 type CentrosCustoProps = {
   Centro_Negocio_Cod: string;
   Centro_Nome: string;
-}
+  work_id: number;
+};
 
-export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemoveProduct }: SelectedProductsProps) => {
+export const SelectedProducts = ({
+  selectedProducts,
+  setSelectedProducts,
+  onRemoveProduct,
+}: SelectedProductsProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [userInfo, setUserInfo] = useState<any>(null);
   const [nome, setNome] = useState<string | null>(null);
   const [destino, setDestino] = useState("");
-  // Centro de custo escolhido a ser enviado para a lista de espera
   const [centroCustoSelected, setCentroCustoSelected] = useState<CentrosCustoProps | null>(null);
-  // Centros de Custo que são carregados do backend para ser escolhidos
   const [centrosCusto, setCentrosCusto] = useState<CentrosCustoProps[]>([]);
   const [loadingSendProducts, setLoadingSendProducts] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -49,58 +55,65 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
   const [isCopied, setIsCopied] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  // Estados para os modais
   const [isDestinoModalOpen, setIsDestinoModalOpen] = useState(false);
   const [isCentroCustoModalOpen, setIsCentroCustoModalOpen] = useState(false);
   const [filterDestino, setFilterDestino] = useState("");
 
-  // Lista de destinos
- const destinos = [
-  "Civil",
-  "Terraplenagem",
-  "Drenagem Superficial",
-  "Edificações",
-  "RMT",
-  "SOLAR",
-  "Mecânica",
-  "Meio Ambiente",
-  "Segurança e Saúde Ocupacional (SSO)",
-  "Administrativo",
-  "Departamento Pessoal",
-  "Sala Técnica",
-  "Qualidade e Laboratórios",
-  "Gestor de Contratos, Planejamento e Custos",
-  "Eng. Produção e Enc. Gerais",
-  "Almoxarifado",
-  "Compras",
-  "RMT - Mecânica",
-  "RMT - Meio Ambiente",
-  "RMT - Segurança e Saúde Ocupacional (SSO)",
-  "RMT - Administrativo",
-  "RMT - Departamento Pessoal",
-  "RMT - Sala Técnica",
-  "RMT - Qualidade e Laboratórios",
-  "RMT - Gestor de Contratos, Planejamento e Custos",
-  "RMT - Eng. Produção e Enc. Gerais",
-  "RMT - Almoxarifado",
-  "RMT - Compras",
-  "Solar - Mecânica",
-  "Solar - Meio Ambiente",
-  "Solar - Segurança e Saúde Ocupacional (SSO)",
-  "Solar - Administrativo",
-  "Solar - Departamento Pessoal",
-  "Solar - Sala Técnica",
-  "Solar - Qualidade e Laboratórios",
-  "Solar - Gestor de Contratos, Planejamento e Custos",
-  "Solar - Eng. Produção e Enc. Gerais",
-  "Solar - Almoxarifado",
-  "Solar - Compras"
-];
+  const destinos = [
+    "Civil",
+    "Terraplenagem",
+    "Drenagem Superficial",
+    "Edificações",
+    "RMT",
+    "SOLAR",
+    "Mecânica",
+    "Meio Ambiente",
+    "Segurança e Saúde Ocupacional (SSO)",
+    "Administrativo",
+    "Departamento Pessoal",
+    "Sala Técnica",
+    "Qualidade e Laboratórios",
+    "Gestor de Contratos, Planejamento e Custos",
+    "Eng. Produção e Enc. Gerais",
+    "Almoxarifado",
+    "Compras",
+    "RMT - Mecânica",
+    "RMT - Meio Ambiente",
+    "RMT - Segurança e Saúde Ocupacional (SSO)",
+    "RMT - Administrativo",
+    "RMT - Departamento Pessoal",
+    "RMT - Sala Técnica",
+    "RMT - Qualidade e Laboratórios",
+    "RMT - Gestor de Contratos, Planejamento e Custos",
+    "RMT - Eng. Produção e Enc. Gerais",
+    "RMT - Almoxarifado",
+    "RMT - Compras",
+    "Solar - Mecânica",
+    "Solar - Meio Ambiente",
+    "Solar - Segurança e Saúde Ocupacional (SSO)",
+    "Solar - Administrativo",
+    "Solar - Departamento Pessoal",
+    "Solar - Sala Técnica",
+    "Solar - Qualidade e Laboratórios",
+    "Solar - Gestor de Contratos, Planejamento e Custos",
+    "Solar - Eng. Produção e Enc. Gerais",
+    "Solar - Almoxarifado",
+    "Solar - Compras"
+  ];
 
   useEffect(() => {
-    const name = getNameFromToken();
-    setNome(name);
-    fetchAllCostCenter()
+    const user = getUserInfoFromToken();
+    setUserInfo(user);
+    setNome(user?.nome || null);
+    
+     // Converter possíveis valores null para undefined
+    let obraId: number | undefined = undefined;
+    
+    if (user?.tipo === 'Almoxarife' && user.obra_id !== null) {
+      obraId = user.obra_id;
+    }
+  
+    fetchAllCostCenter(obraId);
   }, []);
 
   const handleInputChange = (
@@ -115,15 +128,19 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     );
   };
 
-  const fetchAllCostCenter = async () => {
+  const fetchAllCostCenter = async (obraId?: number) => {
     try {
-      const response = await getAllCostCenter();
+      const response = await getAllCostCenter(obraId);
       setCentrosCusto(response);
-    }
-    catch (error) {
+    } catch (error) {
       console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao carregar os centros de custo",
+      });
     } 
-  }
+  };
 
   const handleRemove = (id: number) => {
     setSelectedProducts((prev) => prev.filter((product) => product.id !== id));
@@ -133,6 +150,17 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
 
   const handleSend = async () => {
     setLoadingSendProducts(true);
+    
+    if (!centroCustoSelected) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Selecione um centro de custo",
+      });
+      setLoadingSendProducts(false);
+      return;
+    }
+
     const dataToSend = {
       almoxarife_nome: nome || undefined,
       destino: destino,
@@ -145,18 +173,17 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         quantidade: product.quantidade,
       })),
     };
-    console.log("Payload a ser enviado:", JSON.stringify(dataToSend, null, 2))
 
     try {
       const response = await addProductToWaitingList(dataToSend);
       setOrderCode(response.codigo_pedido);
       setSuccessMessage("Envio realizado com sucesso!");
       setErrorMessage(null);
-      setNome("");
       setDestino("");
       setCentroCustoSelected(null);
-    } catch (error) {
-      setErrorMessage("Erro ao enviar dados. Tente novamente.");
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || "Erro ao enviar dados. Tente novamente.";
+      setErrorMessage(errorMessage);
       setSuccessMessage(null);
     } finally {
       setLoadingSendProducts(false);
@@ -167,12 +194,12 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
     selectedProducts.length > 0 &&
     nome &&
     destino &&
-    centroCustoSelected && // Centro de custo agora é obrigatório
+    centroCustoSelected && 
     selectedProducts.every((p) => p.quantidade > 0)
   );
 
   const handleCopyOrderCode = () => {
-    navigator.clipboard.writeText(orderCode || '');;
+    navigator.clipboard.writeText(orderCode || '');
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 5000);
   };
@@ -210,12 +237,13 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
                 <Check size={15} className="text-gray-500" />
               ) : (
                 <Copy size={15} className="text-gray-500 hover:text-gray-700" />
-              ) }
+              )}
             </button>
           </div>
         </>
       )}
       {errorMessage && <p className="text-red-500 mb-4">{errorMessage}</p>}
+      
       {/* Área rolável para os produtos */}
       <div className="max-h-60 overflow-y-auto border rounded-2xl p-2">
         {selectedProducts.map((product) => (
@@ -228,8 +256,9 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               <label className="block text-sm font-medium text-gray-700">
                 Código do Produto
               </label>
-              <div className="mt-1 text-gray-900">{product.Insumo_Cod}</div>
+              <div className="mt-1 text-gray-900">{product.Insumo_Cod}-{product.SubInsumo_Cod}</div>
             </div>
+            
             {/* Nome do produto */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -237,6 +266,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               </label>
               <div className="mt-1 text-gray-900">{product.SubInsumo_Especificacao}</div>
             </div>
+            
             {/* Unidade */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -244,6 +274,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               </label>
               <div className="mt-1 text-gray-900">{product.Unid_Cod || "-"}</div>
             </div>
+            
             {/* Quantidade */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -261,10 +292,10 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
                   className="mt-1 rounded-2xl"
                 />
                 <button
-                    className="pl-2 mr-1 text-black hover:text-gray-800 transition"
-                    onClick={() => handleRemove(product.id)}
-                    aria-label={`Remover ${product.SubInsumo_Especificacao}`}
-                  >
+                  className="pl-2 mr-1 text-black hover:text-gray-800 transition"
+                  onClick={() => handleRemove(product.id)}
+                  aria-label={`Remover ${product.SubInsumo_Especificacao}`}
+                >
                   <X size={20} />
                 </button>
               </div>
@@ -289,7 +320,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
             />
           </div>
           
-          {/* Destino e Centro de Custo lado a lado em telas maiores */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Campo de Destino */}
             <div>
@@ -373,7 +403,7 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
         </div>
       </div>
 
-  {/* Modal de Destino */}
+      {/* Modal de Destino */}
       <AlertDialog open={isDestinoModalOpen} onOpenChange={setIsDestinoModalOpen}>
         <AlertDialogContent className="max-w-2xl flex flex-col">
           <AlertDialogHeader>
@@ -384,7 +414,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
           </AlertDialogHeader>
           
           <div className="p-4">
-            {/* Campo de filtro */}
             <Input
               placeholder="Filtrar destinos..."
               value={filterDestino}
@@ -392,7 +421,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
               className="mb-4 rounded-2xl"
             />
             
-            {/* Lista de destinos com scroll */}
             <div className="border rounded-lg overflow-auto max-h-[50vh]">
               {destinos
                 .filter(destino => 
@@ -414,7 +442,6 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
             </div>
           </div>
           
-          {/* Botão de Cancelar no rodapé */}
           <AlertDialogFooter className="mt-2 px-6 pb-4">
             <AlertDialogCancel 
               onClick={() => setIsDestinoModalOpen(false)}
@@ -430,28 +457,41 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
       <AlertDialog open={isCentroCustoModalOpen} onOpenChange={setIsCentroCustoModalOpen}>
         <AlertDialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
           <AlertDialogHeader>
-            <AlertDialogTitle>Escolha o centro de custo</AlertDialogTitle>
+            <AlertDialogTitle>
+              {userInfo?.tipo === 'Almoxarife' 
+                ? "Centros de Custo da Sua Obra" 
+                : "Escolha o centro de custo"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Selecione o centro de custo para os produtos
+              {userInfo?.tipo === 'Almoxarife' && userInfo?.obra_id && (
+                <div className="text-green-600 font-medium">
+                  Filtrados pela obra associada ao seu perfil
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           
           <div className="p-4">
-            {/* Lista de centros de custo */}
             <div className="border rounded-lg overflow-auto max-h-[300px]">
-              {centrosCusto.map((centro, index) => (
-                <div 
-                  key={index}
-                  className={`p-3 border-b cursor-pointer flex items-center ${
-                    centroCustoSelected?.Centro_Nome === centro.Centro_Nome
-                      ? "bg-blue-50 border-l-4 border-l-blue-500" 
-                      : "hover:bg-gray-50"
-                  }`}
-                  onClick={() => handleSelectCentroCusto(centro)}
-                >
-                  <span>{centro.Centro_Nome} - {centro.Centro_Negocio_Cod}</span>
+              {centrosCusto.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">
+                  Nenhum centro de custo disponível
                 </div>
-              ))}
+              ) : (
+                centrosCusto.map((centro, index) => (
+                  <div 
+                    key={index}
+                    className={`p-3 border-b cursor-pointer flex items-center ${
+                      centroCustoSelected?.Centro_Nome === centro.Centro_Nome
+                        ? "bg-blue-50 border-l-4 border-l-blue-500" 
+                        : "hover:bg-gray-50"
+                    }`}
+                    onClick={() => handleSelectCentroCusto(centro)}
+                  >
+                    <span>{centro.Centro_Nome} - {centro.Centro_Negocio_Cod}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
           

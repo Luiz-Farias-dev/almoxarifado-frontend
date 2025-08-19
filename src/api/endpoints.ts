@@ -192,10 +192,26 @@ export const generateReport = async (
 // ENDPOINTS PARA OBRAS E CENTROS DE CUSTO
 // ===========================================
 
+//Prop de centro de custo
+export interface CentrosCustoProps {
+  Centro_Negocio_Cod: string;
+  Centro_Nome: string;
+  work_id: number;
+}
 // Pegar todos os centros de custo
-export const getAllCostCenter = async () => {
-  const response = await api.get("/cost-center/");
-  return response.data;
+export const getAllCostCenter = async (
+  obraId?: number | null
+): Promise<CentrosCustoProps[]> => {
+  const params: Record<string, any> = {};
+  if (obraId) params.obra_id = obraId;
+
+  try {
+    const response = await api.get("/cost-center", { params });
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao buscar centros de custo:", error);
+    throw new Error("Falha ao carregar centros de custo");
+  }
 };
 
 // Criar um novo centro de custo
