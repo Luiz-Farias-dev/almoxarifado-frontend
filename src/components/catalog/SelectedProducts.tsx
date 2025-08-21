@@ -148,23 +148,60 @@ export const SelectedProducts = ({
     setSuccessMessage(null);
   };
 
-  const handleSend = async () => {
-    setLoadingSendProducts(true);
+  // Função para validar os dados antes do envio
+  const validateDataBeforeSend = () => {
+    if (!nome || nome.trim() === "") {
+      return "O nome do almoxarife é obrigatório";
+    }
+    
+    if (!destino || destino.trim() === "") {
+      return "O destino é obrigatório";
+    }
     
     if (!centroCustoSelected) {
+      return "O centro de custo é obrigatório";
+    }
+    
+    if (selectedProducts.length === 0) {
+      return "Selecione pelo menos um produto";
+    }
+    
+    for (const product of selectedProducts) {
+      if (!product.quantidade || product.quantidade <= 0) {
+        return `A quantidade do produto ${product.Insumo_Cod}-${product.SubInsumo_Cod} deve ser maior que zero`;
+      }
+      
+      if (!product.Unid_Cod || product.Unid_Cod.trim() === "") {
+        return `A unidade do produto ${product.Insumo_Cod}-${product.SubInsumo_Cod} é obrigatória`;
+      }
+      
+      if (!product.SubInsumo_Especificacao || product.SubInsumo_Especificacao.trim() === "") {
+        return `A especificação do produto ${product.Insumo_Cod}-${product.SubInsumo_Cod} é obrigatória`;
+      }
+    }
+    
+    return null;
+  };
+
+  const handleSend = async () => {
+    // Validar dados antes de enviar
+    const validationError = validateDataBeforeSend();
+    if (validationError) {
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: "Selecione um centro de custo",
+        title: "Erro de validação",
+        description: validationError,
       });
-      setLoadingSendProducts(false);
       return;
     }
-
+    
+    setLoadingSendProducts(true);
+    setErrorMessage(null);
+    
     const dataToSend = {
-      almoxarife_nome: nome || undefined,
+      almoxarife_nome: nome,
       destino: destino,
-      centro_custo: centroCustoSelected || undefined,
+      centro_custo: centroCustoSelected,
       produtos: selectedProducts.map((product) => ({
         Insumo_Cod: product.Insumo_Cod,
         SubInsumo_Cod: product.SubInsumo_Cod,
@@ -174,17 +211,55 @@ export const SelectedProducts = ({
       })),
     };
 
+    // Log para debug - remover em produção
+    console.log("Dados enviados:", JSON.stringify(dataToSend, null, 2));
+
     try {
       const response = await addProductToWaitingList(dataToSend);
       setOrderCode(response.codigo_pedido);
       setSuccessMessage("Envio realizado com sucesso!");
-      setErrorMessage(null);
       setDestino("");
       setCentroCustoSelected(null);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || "Erro ao enviar dados. Tente novamente.";
-      setErrorMessage(errorMessage);
-      setSuccessMessage(null);
+      // Tratamento melhorado de erros
+      let errorDetail = "Erro ao enviar dados. Tente novamente.";
+      
+      if (error.response?.data?.detail) {
+        // Se for um array de erros de validação
+        if (Array.isArray(error.response.data.detail)) {
+          errorDetail = error.response.data.detail
+            .map((err: any) => {
+              // Extrai informações específicas do erro de campo obrigatório
+              if (err.type === "value_error.missing") {
+                return `Campo obrigatório faltando: ${err.loc.join('.')}`;
+              }
+              return err.msg || JSON.stringify(err);
+            })
+            .join(', ');
+        } 
+        // Se for um objeto com propriedade msg
+        else if (typeof error.response.data.detail === 'object' && error.response.data.detail.msg) {
+          errorDetail = error.response.data.detail.msg;
+        }
+        // Se for uma string
+        else if (typeof error.response.data.detail === 'string') {
+          errorDetail = error.response.data.detail;
+        }
+        // Caso contrário, converter para string
+        else {
+          errorDetail = JSON.stringify(error.response.data.detail);
+        }
+      } else if (error.message) {
+        errorDetail = error.message;
+      }
+      
+      setErrorMessage(errorDetail);
+      
+      toast({
+        variant: "destructive",
+        title: "Erro ao enviar",
+        description: errorDetail,
+      });
     } finally {
       setLoadingSendProducts(false);
     }
@@ -199,9 +274,11 @@ export const SelectedProducts = ({
   );
 
   const handleCopyOrderCode = () => {
-    navigator.clipboard.writeText(orderCode || '');
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 5000);
+    if (orderCode) {
+      navigator.clipboard.writeText(orderCode);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
   };
 
   const handleSelectDestino = (destinoSelecionado: string) => {
@@ -242,7 +319,12 @@ export const SelectedProducts = ({
           </div>
         </>
       )}
-      {errorMessage && <p className="text-red-500 mb-4">{errorMessage}</p>}
+      {errorMessage && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+          <p className="text-red-700 font-medium">Erro:</p>
+          <p className="text-red-600">{errorMessage}</p>
+        </div>
+      )}
       
       {/* Área rolável para os produtos */}
       <div className="max-h-60 overflow-y-auto border rounded-2xl p-2">
@@ -283,10 +365,11 @@ export const SelectedProducts = ({
               <div className="flex flex-row items-center">
                 <Input
                   type="number"
+                  min="1"
                   value={product.quantidade}
                   placeholder="Quantidade"
                   onChange={(e) =>
-                    handleInputChange(product.id, "quantidade", parseInt(e.target.value))
+                    handleInputChange(product.id, "quantidade", parseInt(e.target.value) || 0)
                   }
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   className="mt-1 rounded-2xl"
@@ -315,7 +398,7 @@ export const SelectedProducts = ({
               type="text"
               value={nome || ""}
               placeholder="Digite seu nome"
-              readOnly
+              onChange={(e) => setNome(e.target.value)}
               className="mt-1 rounded-2xl"
             />
           </div>
@@ -387,9 +470,9 @@ export const SelectedProducts = ({
           </button>
           <button
             onClick={handleSend}
-            disabled={isSendButtonDisabled}
+            disabled={isSendButtonDisabled || loadingSendProducts}
             className={`w-full sm:w-auto px-4 py-2 rounded-2xl transition ${
-              isSendButtonDisabled
+              isSendButtonDisabled || loadingSendProducts
                 ? "bg-gray-400 text-white cursor-not-allowed"
                 : "bg-blue-500 text-white hover:bg-blue-600"
             }`}

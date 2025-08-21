@@ -10,18 +10,32 @@ const Header = (header: { title?: string }) => {
   const [greeting, setGreeting] = useState<string>("");
 
   useEffect(() => {
-    // Adicione um log para debug
-    console.log("Token no localStorage:", localStorage.getItem("token"));
-    
-    const name = getNameFromToken();
-    const type = getTypeFromToken();
-    
-    console.log("Nome do token:", name);
-    console.log("Tipo do token:", type);
-    
-    setUserName(name);
-    setUserType(type);
+    const loadUserData = () => {
+      const name = getNameFromToken();
+      const type = getTypeFromToken();
+      setUserName(name);
+      setUserType(type);
+    };
 
+    // Carrega os dados inicialmente
+    loadUserData();
+
+    // Adiciona listener para mudanças no storage (entre abas)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token' || e.key === 'accessToken') {
+        loadUserData();
+      }
+    };
+
+    // Listener customizado para mudanças na mesma aba
+    const handleTokenChange = () => {
+      loadUserData();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('tokenChanged', handleTokenChange);
+
+    // Saudação baseada no horário
     const currentHour = new Date().getHours();
     if (currentHour < 12) {
       setGreeting("Bom dia");
@@ -30,13 +44,19 @@ const Header = (header: { title?: string }) => {
     } else {
       setGreeting("Boa noite");
     }
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('tokenChanged', handleTokenChange);
+    };
   }, []);
 
   const handleLogout = () => {
-    // Remove todos os possíveis tokens
     localStorage.removeItem("token");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    // Dispara evento para atualizar outros componentes
+    window.dispatchEvent(new Event('tokenChanged'));
     navigate("/login");
   };
 

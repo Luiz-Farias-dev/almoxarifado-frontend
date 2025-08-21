@@ -1,5 +1,4 @@
-// src/utils/tokenUtils.ts
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 export interface UserToken {
   id: number;
@@ -9,7 +8,6 @@ export interface UserToken {
 }
 
 export function getUserInfoFromToken(): UserToken | null {
-  // Tenta diferentes chaves possíveis para o token
   const tokenKeys = ['token', 'accessToken', 'authToken'];
   let token = null;
   
@@ -31,17 +29,23 @@ export function getUserInfoFromToken(): UserToken | null {
     const decoded: any = jwtDecode(token);
     console.log("Token decodificado:", decoded);
     
-    // Verifica se os campos necessários existem
-    if (!decoded.sub || !decoded.tipo) {
-      console.error("Token não contém os campos necessários (sub ou tipo)");
+    // Tenta obter o nome de várias possibilidades
+    const userName = decoded.sub || decoded.name || decoded.username || '';
+    // Tenta obter o tipo de várias possibilidades
+    const userType = decoded.tipo || decoded.role || decoded.type || '';
+    const userId = decoded.id || decoded.userId || 0;
+    const obraId = decoded.obra_id || decoded.obraId || null;
+
+    if (!userName) {
+      console.error("Token não contém campo de nome (sub, name, username)");
       return null;
     }
-    
+
     return {
-      id: decoded.id || 0,
-      nome: decoded.sub,
-      tipo: decoded.tipo,
-      obra_id: decoded.obra_id || null
+      id: userId,
+      nome: userName,
+      tipo: userType,
+      obra_id: obraId
     };
   } catch (error) {
     console.error("Erro ao decodificar token:", error);
