@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { X, Copy, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import LoadingSpinner from "../LoadingSpinner";
-import { addProductToWaitingList, getAllCostCenter } from "@/api/endpoints";
+import { addProductToWaitingList, getAllCostCenter, getWorkById } from "@/api/endpoints";
 import { getUserInfoFromToken } from "@/utils/tokenUtils";
 import {
   AlertDialog,
@@ -37,6 +37,13 @@ type CentrosCustoProps = {
   work_id: number;
 };
 
+type ObraDetails = {
+  id: number;
+  name: string;
+  initials: string;
+  // Adicione outros campos conforme necessário
+};
+
 export const SelectedProducts = ({
   selectedProducts,
   setSelectedProducts,
@@ -54,6 +61,8 @@ export const SelectedProducts = ({
   const [orderCode, setOrderCode] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [obraDetails, setObraDetails] = useState<ObraDetails | null>(null);
+  const [loadingObra, setLoadingObra] = useState(false);
   
   const [isDestinoModalOpen, setIsDestinoModalOpen] = useState(false);
   const [isCentroCustoModalOpen, setIsCentroCustoModalOpen] = useState(false);
@@ -106,15 +115,35 @@ export const SelectedProducts = ({
     setUserInfo(user);
     setNome(user?.nome || null);
     
-     // Converter possíveis valores null para undefined
+    // Converter possíveis valores null para undefined
     let obraId: number | undefined = undefined;
     
     if (user?.tipo === 'Almoxarife' && user.obra_id !== null) {
       obraId = user.obra_id;
+      // Buscar detalhes da obra
+      fetchObraDetails(user.obra_id);
     }
   
     fetchAllCostCenter(obraId);
   }, []);
+
+  const fetchObraDetails = async (obraId: number) => {
+    setLoadingObra(true);
+    try {
+      const response = await getWorkById(obraId);
+      console.log(response)
+      setObraDetails(response);
+    } catch (error) {
+      console.error("Erro ao buscar detalhes da obra:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao carregar os detalhes da obra",
+      });
+    } finally {
+      setLoadingObra(false);
+    }
+  };
 
   const handleInputChange = (
     id: number,
@@ -307,7 +336,7 @@ export const SelectedProducts = ({
       {successMessage && (
         <>
           <p className="text-green-500 mb-1">{successMessage}</p>
-          <div className="flex items-center text-gray-800 mb-2">
+          <div className="flex items-center text-gray-80 mb-2">
             <p className="mr-2">Código do pedido: {orderCode}</p>
             <button onClick={handleCopyOrderCode} aria-label="Copiar número do pedido">
               {isCopied ? (
@@ -542,14 +571,14 @@ export const SelectedProducts = ({
           <AlertDialogHeader>
             <AlertDialogTitle>
               {userInfo?.tipo === 'Almoxarife' 
-                ? "Centros de Custo da Sua Obra" 
+                ? `Centros de Custo da Obra: ${obraDetails?.initials || 'Nome não encontrado'}` 
                 : "Escolha o centro de custo"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {userInfo?.tipo === 'Almoxarife' && userInfo?.obra_id && (
-                <div className="text-green-600 font-medium">
-                  Filtrados pela obra associada ao seu perfil
-                </div>
+                <span className="text-green-600 font-medium">
+                  Escolha um centro de custo
+                </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
