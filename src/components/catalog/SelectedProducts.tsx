@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { X, Copy, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import LoadingSpinner from "../LoadingSpinner";
-import { addProductToWaitingList, getAllCostCenter, getWorkById } from "@/api/endpoints";
+import { addProductToWaitingList, getAllCostCenter } from "@/api/endpoints";
 import { getUserInfoFromToken } from "@/utils/tokenUtils";
 import {
   AlertDialog,
@@ -34,14 +34,6 @@ type SelectedProductsProps = {
 type CentrosCustoProps = {
   Centro_Negocio_Cod: string;
   Centro_Nome: string;
-  work_id: number;
-};
-
-type ObraDetails = {
-  id: number;
-  name: string;
-  initials: string;
-  // Adicione outros campos conforme necessário
 };
 
 export const SelectedProducts = ({
@@ -52,17 +44,15 @@ export const SelectedProducts = ({
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userInfo, setUserInfo] = useState<any>(null);
-  const [nome, setNome] = useState<string | null>(null);
+  const [nome, setNome] = useState<string | undefined>("");
   const [destino, setDestino] = useState("");
-  const [centroCustoSelected, setCentroCustoSelected] = useState<CentrosCustoProps | null>(null);
+  const [centroCustoSelected, setCentroCustoSelected] = useState<CentrosCustoProps>();
   const [centrosCusto, setCentrosCusto] = useState<CentrosCustoProps[]>([]);
   const [loadingSendProducts, setLoadingSendProducts] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [orderCode, setOrderCode] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [obraDetails, setObraDetails] = useState<ObraDetails | null>(null);
-  const [loadingObra, setLoadingObra] = useState(false);
   
   const [isDestinoModalOpen, setIsDestinoModalOpen] = useState(false);
   const [isCentroCustoModalOpen, setIsCentroCustoModalOpen] = useState(false);
@@ -72,40 +62,40 @@ export const SelectedProducts = ({
     "Civil",
     "Terraplenagem",
     "Drenagem Superficial",
-    "Edificações",
+    "Edificacoes",
     "RMT",
     "SOLAR",
-    "Mecânica",
+    "Mecanica",
     "Meio Ambiente",
-    "Segurança e Saúde Ocupacional (SSO)",
+    "Seguranca e Saude Ocupacional (SSO)",
     "Administrativo",
     "Departamento Pessoal",
-    "Sala Técnica",
-    "Qualidade e Laboratórios",
+    "Sala Tecnica",
+    "Qualidade e Laboratorios",
     "Gestor de Contratos, Planejamento e Custos",
-    "Eng. Produção e Enc. Gerais",
+    "Eng. Producao e Enc. Gerais",
     "Almoxarifado",
     "Compras",
-    "RMT - Mecânica",
+    "RMT - Mecanica",
     "RMT - Meio Ambiente",
-    "RMT - Segurança e Saúde Ocupacional (SSO)",
+    "RMT - Seguranca e Saude Ocupacional (SSO)",
     "RMT - Administrativo",
     "RMT - Departamento Pessoal",
-    "RMT - Sala Técnica",
-    "RMT - Qualidade e Laboratórios",
+    "RMT - Sala Tecnica",
+    "RMT - Qualidade e Laboratorios",
     "RMT - Gestor de Contratos, Planejamento e Custos",
-    "RMT - Eng. Produção e Enc. Gerais",
+    "RMT - Eng. Producao e Enc. Gerais",
     "RMT - Almoxarifado",
     "RMT - Compras",
-    "Solar - Mecânica",
+    "Solar - Mecanica",
     "Solar - Meio Ambiente",
-    "Solar - Segurança e Saúde Ocupacional (SSO)",
+    "Solar - Seguranca e Saude Ocupacional (SSO)",
     "Solar - Administrativo",
     "Solar - Departamento Pessoal",
-    "Solar - Sala Técnica",
-    "Solar - Qualidade e Laboratórios",
+    "Solar - Sala Tecnica",
+    "Solar - Qualidade e Laboratorios",
     "Solar - Gestor de Contratos, Planejamento e Custos",
-    "Solar - Eng. Produção e Enc. Gerais",
+    "Solar - Eng. Producao e Enc. Gerais",
     "Solar - Almoxarifado",
     "Solar - Compras"
   ];
@@ -113,37 +103,17 @@ export const SelectedProducts = ({
   useEffect(() => {
     const user = getUserInfoFromToken();
     setUserInfo(user);
-    setNome(user?.nome || null);
+    setNome(user?.nome || undefined);
     
-    // Converter possíveis valores null para undefined
+    // Converter possiveis valores null para undefined
     let obraId: number | undefined = undefined;
     
     if (user?.tipo === 'Almoxarife' && user.obra_id !== null) {
       obraId = user.obra_id;
-      // Buscar detalhes da obra
-      fetchObraDetails(user.obra_id);
     }
   
     fetchAllCostCenter(obraId);
   }, []);
-
-  const fetchObraDetails = async (obraId: number) => {
-    setLoadingObra(true);
-    try {
-      const response = await getWorkById(obraId);
-      console.log(response)
-      setObraDetails(response);
-    } catch (error) {
-      console.error("Erro ao buscar detalhes da obra:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Falha ao carregar os detalhes da obra",
-      });
-    } finally {
-      setLoadingObra(false);
-    }
-  };
 
   const handleInputChange = (
     id: number,
@@ -177,18 +147,18 @@ export const SelectedProducts = ({
     setSuccessMessage(null);
   };
 
-  // Função para validar os dados antes do envio
+  // Funcao para validar os dados antes do envio
   const validateDataBeforeSend = () => {
     if (!nome || nome.trim() === "") {
-      return "O nome do almoxarife é obrigatório";
+      return "O nome do almoxarife e obrigatorio";
     }
     
     if (!destino || destino.trim() === "") {
-      return "O destino é obrigatório";
+      return "O destino e obrigatorio";
     }
     
     if (!centroCustoSelected) {
-      return "O centro de custo é obrigatório";
+      return "O centro de custo e obrigatorio";
     }
     
     if (selectedProducts.length === 0) {
@@ -201,11 +171,11 @@ export const SelectedProducts = ({
       }
       
       if (!product.Unid_Cod || product.Unid_Cod.trim() === "") {
-        return `A unidade do produto ${product.Insumo_Cod}-${product.SubInsumo_Cod} é obrigatória`;
+        return `A unidade do produto ${product.Insumo_Cod}-${product.SubInsumo_Cod} e obrigatoria`;
       }
       
       if (!product.SubInsumo_Especificacao || product.SubInsumo_Especificacao.trim() === "") {
-        return `A especificação do produto ${product.Insumo_Cod}-${product.SubInsumo_Cod} é obrigatória`;
+        return `A especificacao do produto ${product.Insumo_Cod}-${product.SubInsumo_Cod} e obrigatoria`;
       }
     }
     
@@ -218,7 +188,7 @@ export const SelectedProducts = ({
     if (validationError) {
       toast({
         variant: "destructive",
-        title: "Erro de validação",
+        title: "Erro de validacao",
         description: validationError,
       });
       return;
@@ -227,10 +197,14 @@ export const SelectedProducts = ({
     setLoadingSendProducts(true);
     setErrorMessage(null);
     
+    // Garantir que os valores sao strings (nao undefined)
     const dataToSend = {
-      almoxarife_nome: nome,
+      almoxarife_nome: nome || "", // Garante que e string
       destino: destino,
-      centro_custo: centroCustoSelected,
+      centro_custo: {
+        Centro_Negocio_Cod: centroCustoSelected?.Centro_Negocio_Cod || "", // Garante que e string
+        Centro_Nome: centroCustoSelected?.Centro_Nome || "" // Garante que e string
+      },
       produtos: selectedProducts.map((product) => ({
         Insumo_Cod: product.Insumo_Cod,
         SubInsumo_Cod: product.SubInsumo_Cod,
@@ -240,7 +214,7 @@ export const SelectedProducts = ({
       })),
     };
 
-    // Log para debug - remover em produção
+    // Log para debug - remover em producao
     console.log("Dados enviados:", JSON.stringify(dataToSend, null, 2));
 
     try {
@@ -248,25 +222,25 @@ export const SelectedProducts = ({
       setOrderCode(response.codigo_pedido);
       setSuccessMessage("Envio realizado com sucesso!");
       setDestino("");
-      setCentroCustoSelected(null);
+      setCentroCustoSelected(undefined);
     } catch (error: any) {
       // Tratamento melhorado de erros
       let errorDetail = "Erro ao enviar dados. Tente novamente.";
       
       if (error.response?.data?.detail) {
-        // Se for um array de erros de validação
+        // Se for um array de erros de validacao
         if (Array.isArray(error.response.data.detail)) {
           errorDetail = error.response.data.detail
             .map((err: any) => {
-              // Extrai informações específicas do erro de campo obrigatório
+              // Extrai informacoes especificas do erro de campo obrigatorio
               if (err.type === "value_error.missing") {
-                return `Campo obrigatório faltando: ${err.loc.join('.')}`;
+                return `Campo obrigatorio faltando: ${err.loc.join('.')}`;
               }
               return err.msg || JSON.stringify(err);
             })
             .join(', ');
         } 
-        // Se for um objeto com propriedade msg
+        // Se for um objeto dengan propriedade msg
         else if (typeof error.response.data.detail === 'object' && error.response.data.detail.msg) {
           errorDetail = error.response.data.detail.msg;
         }
@@ -274,7 +248,7 @@ export const SelectedProducts = ({
         else if (typeof error.response.data.detail === 'string') {
           errorDetail = error.response.data.detail;
         }
-        // Caso contrário, converter para string
+        // Caso contrario, converter para string
         else {
           errorDetail = JSON.stringify(error.response.data.detail);
         }
@@ -325,7 +299,7 @@ export const SelectedProducts = ({
   };
 
   const handleClearCentroCusto = () => {
-    setCentroCustoSelected(null);
+    setCentroCustoSelected(undefined);
   };
 
   return (
@@ -337,8 +311,8 @@ export const SelectedProducts = ({
         <>
           <p className="text-green-500 mb-1">{successMessage}</p>
           <div className="flex items-center text-gray-80 mb-2">
-            <p className="mr-2">Código do pedido: {orderCode}</p>
-            <button onClick={handleCopyOrderCode} aria-label="Copiar número do pedido">
+            <p className="mr-2">Codigo do pedido: {orderCode}</p>
+            <button onClick={handleCopyOrderCode} aria-label="Copiar numero do pedido">
               {isCopied ? (
                 <Check size={15} className="text-gray-500" />
               ) : (
@@ -355,17 +329,17 @@ export const SelectedProducts = ({
         </div>
       )}
       
-      {/* Área rolável para os produtos */}
+      {/* Area rolavel para os produtos */}
       <div className="max-h-60 overflow-y-auto border rounded-2xl p-2">
         {selectedProducts.map((product) => (
           <div
             key={product.id}
             className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-center mb-3 border-b pb-2 relative"
           >
-            {/* Código do produto */}
+            {/* Codigo do produto */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Código do Produto
+                Codigo do Produto
               </label>
               <div className="mt-1 text-gray-900">{product.Insumo_Cod}-{product.SubInsumo_Cod}</div>
             </div>
@@ -373,7 +347,7 @@ export const SelectedProducts = ({
             {/* Nome do produto */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Especificação do Insumo
+                Especificacao do Insumo
               </label>
               <div className="mt-1 text-gray-900">{product.SubInsumo_Especificacao}</div>
             </div>
@@ -489,13 +463,13 @@ export const SelectedProducts = ({
           </div>
         </div>
         
-        {/* Botão de Enviar */}
+        {/* Botao de Enviar */}
         <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mt-4">
           <button
             onClick={() => navigate("/lista-espera")}
             className="w-full sm:w-auto px-4 py-2 rounded-2xl text-yellow-500 border border-yellow-500 hover:bg-yellow-500 hover:text-white transition"
           >
-            Ir para Autorização de Requisição
+            Ir para Autorizacao de Requisicao
           </button>
           <button
             onClick={handleSend}
@@ -538,9 +512,9 @@ export const SelectedProducts = ({
                 .filter(destino => 
                   destino.toLowerCase().includes(filterDestino.toLowerCase())
                 )
-                .map((destinoItem, index) => (
+                .map((destinoItem) => (
                   <div 
-                    key={index}
+                    key={destinoItem} // Usar o proprio destino como chave
                     className={`p-3 border-b cursor-pointer flex items-center ${
                       destino === destinoItem
                         ? "bg-blue-50 border-l-4 border-l-blue-500" 
@@ -571,7 +545,7 @@ export const SelectedProducts = ({
           <AlertDialogHeader>
             <AlertDialogTitle>
               {userInfo?.tipo === 'Almoxarife' 
-                ? `Centros de Custo da Obra: ${obraDetails?.initials || 'Nome não encontrado'}` 
+                ? `Centros de Custo` 
                 : "Escolha o centro de custo"}
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -587,12 +561,12 @@ export const SelectedProducts = ({
             <div className="border rounded-lg overflow-auto max-h-[300px]">
               {centrosCusto.length === 0 ? (
                 <div className="p-4 text-center text-gray-500">
-                  Nenhum centro de custo disponível
+                  Nenhum centro de custo disponivel
                 </div>
               ) : (
-                centrosCusto.map((centro, index) => (
+                centrosCusto.map((centro) => (
                   <div 
-                    key={index}
+                    key={`${centro.Centro_Negocio_Cod}-${centro.Centro_Nome}`} // Chave unica combinando codigo e nome
                     className={`p-3 border-b cursor-pointer flex items-center ${
                       centroCustoSelected?.Centro_Nome === centro.Centro_Nome
                         ? "bg-blue-50 border-l-4 border-l-blue-500" 

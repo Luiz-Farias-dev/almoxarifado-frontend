@@ -1,16 +1,8 @@
 import api from "./axios";
 
-interface WorkProps {
-  id: number;
-  initials: string;
-  name: string;
-}
-
 interface CostCenterProps {
   Centro_Negocio_Cod: string;
   Centro_Nome: string;
-  work_id: number;
-  work?: WorkProps;
 }
 
 export const login = async (cpf: string, senha: string) => {
@@ -70,9 +62,9 @@ export const getProducts = async (params: GetProductsParams) => {
 
 // Lista de Espera
 interface WaitingListProps {
-  almoxarife_nome?: string;
+  almoxarife_nome: string | undefined;
   destino: string;
-  centro_custo?: CostCenterProps;
+  centro_custo: CostCenterProps;
   produtos: {
     Insumo_Cod: number;
     SubInsumo_Cod: number;
@@ -196,7 +188,6 @@ export const generateReport = async (
 export interface CentrosCustoProps {
   Centro_Negocio_Cod: string;
   Centro_Nome: string;
-  work_id: number;
 }
 // Pegar todos os centros de custo
 export const getAllCostCenter = async (

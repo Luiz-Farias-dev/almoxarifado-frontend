@@ -38,10 +38,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MoreHorizontal, Trash2 } from "lucide-react";
-import { getWaitingList, removeProductFromWaitingList } from "@/api/endpoints";
+import { getWaitingList, removeProductFromWaitingList, getAllCostCenter } from "@/api/endpoints";
 import LoadingSpinner from "../LoadingSpinner";
-import { SelectedProducts, SelectedProduct } from "./SelectedProducts"; // Importando o tipo exportado
+import { SelectedProducts, SelectedProduct } from "./SelectedProducts";
 import Header from "../Header";
+import { getUserInfoFromToken } from "@/utils/tokenUtils";
+import { useToast } from "@/hooks/use-toast";
 
 export type Produto = {
   id: number;
@@ -55,12 +57,23 @@ export type Produto = {
   centro_custo: {
     Centro_Negocio_Cod: string;
     Centro_Nome: string;
+    work_id?: number;
   };
   almoxarife_nome: string;
   destino: string;
 };
 
-// Removido o tipo SelectedProduct local (usaremos o importado)
+type CentrosCustoProps = {
+  Centro_Negocio_Cod: string;
+  Centro_Nome: string;
+  work_id?: number;
+};
+
+type UserInfo = {
+  tipo: string;
+  obra_id: number | null;
+  nome: string;
+};
 
 const ActionCell = ({
   row,
@@ -255,7 +268,7 @@ export const columns = (
 export function WaitListPage() {
   const [data, setData] = useState<Produto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [, setSkip] = useState(0);
+  const [skip, setSkip] = useState(0);
   const limit = 100;
   const [filterNomeProduto, setFilterNomeProduto] = useState("");
   const [filterDestino, setFilterDestino] = useState("");
@@ -265,8 +278,37 @@ export function WaitListPage() {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState<{ [key: string]: boolean }>({});
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
+  const [centrosCustoObra, setCentrosCustoObra] = useState<CentrosCustoProps[]>([]);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const { toast } = useToast();
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const user = getUserInfoFromToken();
+    setUserInfo(user);
+    
+    if (user?.tipo === 'Almoxarife' && user.obra_id) {
+      fetchCentrosCustoObra(user.obra_id);
+    } else {
+      // Se não for almoxarife, buscar dados diretamente
+      fetchData(0, false);
+    }
+  }, []);
+
+  const fetchCentrosCustoObra = async (obraId: number) => {
+    try {
+      const response = await getAllCostCenter(obraId);
+      setCentrosCustoObra(response);
+    } catch (error) {
+      console.error("Erro ao buscar centros de custo da obra:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao carregar centros de custo da obra",
+      });
+    }
+  };
 
   async function fetchData(
     newSkip: number, 
@@ -284,11 +326,20 @@ export function WaitListPage() {
         destino: buscaDestimo || undefined,
         SubInsumo_Especificacao: buscaNomeProduto || undefined,
       });
-      console.log("Dados da API:", response);
+
+      // Filtrar pelos centros de custo da obra apenas se for almoxarife
+      let filteredData = response;
+      if (userInfo?.tipo === 'Almoxarife' && centrosCustoObra.length > 0) {
+        const nomesCentrosCustoObra = centrosCustoObra.map(centro => centro.Centro_Nome);
+        filteredData = response.filter((produto: Produto) => 
+          nomesCentrosCustoObra.includes(produto.centro_custo.Centro_Nome)
+        );
+      }
+
       if (append) {
-        setData((prev) => [...prev, ...response]);
+        setData((prev) => [...prev, ...filteredData]);
       } else {
-        setData(response);
+        setData(filteredData);
       }
     } catch (error) {
       console.error("Erro ao buscar lista de espera:", error);
@@ -342,10 +393,11 @@ export function WaitListPage() {
     );
   };
 
-  // Carrega os dados assim que a página carrega
   useEffect(() => {
-    fetchData(0, false);
-  }, []);
+    if (userInfo && (userInfo.tipo !== 'Almoxarife' || centrosCustoObra.length > 0)) {
+      fetchData(0, false);
+    }
+  }, [userInfo, centrosCustoObra]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -366,7 +418,7 @@ export function WaitListPage() {
 
     container.addEventListener("scroll", handleScroll);
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [data.length]);
+  }, [data.length, userInfo, centrosCustoObra]);
 
   useEffect(() => {
     const selectedIds = Object.keys(rowSelection)
@@ -387,7 +439,6 @@ export function WaitListPage() {
           almoxarife_nome: produto.almoxarife_nome,
           Unid_Cod: produto.Unid_Cod,
           SubInsumo_Especificacao: produto.SubInsumo_Especificacao,
-          // Convertendo para number para compatibilidade
           codigo_pedido: Number(produto.codigo_pedido),
           centro_custo: produto.centro_custo,
           Insumo_Cod: produto.Insumo_Cod,
@@ -429,6 +480,15 @@ export function WaitListPage() {
   return (
     <div className="w-full px-5">
       <Header title="Autorização de Requisição" />
+      
+      {userInfo?.tipo === 'Almoxarife' && centrosCustoObra.length > 0 && (
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-700">
+            Mostrando apenas requisições dos centros de custo da sua obra
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row items-center py-4 gap-4">
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -562,7 +622,7 @@ export function WaitListPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-22 text-center">
+                <TableCell colSpan={columns(setData, setRowSelection).length} className="h-22 text-center">
                   {isLoading ? "Carregando..." : "Nenhum resultado encontrado."}
                 </TableCell>
               </TableRow>
@@ -594,7 +654,6 @@ export function WaitListPage() {
               return updated;
             });
           }}
-          onSendProductsSuccess={handleRemoveProductFromTable}
         />
       )}
     </div>
