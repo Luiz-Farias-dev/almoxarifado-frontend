@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { addEmployee, addEmployeesFile, getAllWorks } from "@/api/endpoints";
+import { addEmployee, addEmployeesFile, getAllWorks, getCostCentersByWork } from "@/api/endpoints";
 import { isValidCPF, formatCPF } from "@/utils/validateCpf";
 import {
   Accordion,
@@ -12,6 +12,13 @@ import { DropdownMenuRadioEmployeeType } from "./EmployeeTypeMenu";
 import LoadingSpinner from "../LoadingSpinner";
 import Header from "../Header";
 import { utils, write } from "xlsx";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+
+interface CostCenter {
+  Centro_Negocio_Cod: string;
+  Centro_Nome: string;
+}
 
 const AddEmployeePage = () => {
   const { toast } = useToast();
@@ -23,7 +30,11 @@ const AddEmployeePage = () => {
   });
   const [selectedWork, setSelectedWork] = useState<string>("");
   const [works, setWorks] = useState<any[]>([]);
+  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
+  const [selectedCostCenters, setSelectedCostCenters] = useState<string[]>([]);
+  const [availableCostCenters, setAvailableCostCenters] = useState<CostCenter[]>([]);
   const [loadingWorks, setLoadingWorks] = useState(false);
+  const [loadingCostCenters, setLoadingCostCenters] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [loadingForm, setLoadingForm] = useState<boolean>(false);
   const [loadingFile, setLoadingFile] = useState<boolean>(false);
@@ -46,18 +57,65 @@ const AddEmployeePage = () => {
     fetchWorks();
   }, []);
 
+  // Buscar centros de custo quando uma obra for selecionada
+  useEffect(() => {
+    const fetchCostCenters = async () => {
+      if (!selectedWork) {
+        setCostCenters([]);
+        setAvailableCostCenters([]);
+        return;
+      }
+
+      setLoadingCostCenters(true);
+      try {
+        const costCentersData = await getCostCentersByWork(parseInt(selectedWork));
+        setCostCenters(costCentersData);
+        setAvailableCostCenters(costCentersData);
+      } catch (error) {
+        console.error("Erro ao carregar centros de custo:", error);
+        handleFailToast("Erro ao carregar centros de custo. Tente novamente.");
+      } finally {
+        setLoadingCostCenters(false);
+      }
+    };
+
+    fetchCostCenters();
+  }, [selectedWork]);
+
+  // Atualizar centros de custo disponíveis quando a seleção mudar
+  useEffect(() => {
+    const filteredCenters = costCenters.filter(
+      center => !selectedCostCenters.includes(center.Centro_Negocio_Cod)
+    );
+    setAvailableCostCenters(filteredCenters);
+  }, [selectedCostCenters, costCenters]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  const handleAddCostCenter = (costCenterCode: string) => {
+    if (costCenterCode && !selectedCostCenters.includes(costCenterCode)) {
+      setSelectedCostCenters([...selectedCostCenters, costCenterCode]);
+    }
+  };
+
+  const handleRemoveCostCenter = (costCenterCode: string) => {
+    setSelectedCostCenters(selectedCostCenters.filter(code => code !== costCenterCode));
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     setLoadingForm(true);
     e.preventDefault();
     try {
-      // Se for almoxarife, incluir a obra_id
+      // Se for almoxarife, incluir a obra_id e centros de custo
       const dataToSend = formData.tipo_funcionario === "Almoxarife"
-        ? { ...formData, obra_id: selectedWork }
+        ? { 
+            ...formData, 
+            obra_id: selectedWork,
+            centros_custo: selectedCostCenters
+          }
         : formData;
         
       await addEmployee(dataToSend);
@@ -68,6 +126,7 @@ const AddEmployeePage = () => {
         tipo_funcionario: "",
       });
       setSelectedWork(""); // Resetar a obra selecionada
+      setSelectedCostCenters([]); // Resetar centros de custo selecionados
     } catch (error: any) {
       if (error.response?.status === 400) {
         handleFailToast("Funcionário já cadastrado com esse CPF.");
@@ -259,9 +318,9 @@ const AddEmployeePage = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-100 px-4">
       <Header />
-      <div className="flex-1 flex items-center justify-center"> {/* Centralizado vertical e horizontalmente */}
+      <div className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-md p-6 bg-white rounded-2xl shadow-md">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4 text-center"> {/* Texto centralizado */}
+          <h1 className="text-2xl font-bold text-gray-800 mb-4 text-center">
             Cadastrar Funcionário
           </h1>
           
@@ -315,32 +374,106 @@ const AddEmployeePage = () => {
                   
                   {/* Campo para selecionar a obra apenas se for Almoxarife */}
                   {formData.tipo_funcionario === "Almoxarife" && (
-                    <div>
-                      <label htmlFor="obra_id" className="block text-sm font-medium text-gray-700">
-                        Obra do Almoxarife
-                      </label>
-                      {loadingWorks ? (
-                        <div className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl bg-gray-100">
-                          <p className="text-gray-500 text-center">Carregando obras...</p>
+                    <>
+                      <div>
+                        <label htmlFor="obra_id" className="block text-sm font-medium text-gray-700">
+                          Obra do Almoxarife
+                        </label>
+                        {loadingWorks ? (
+                          <div className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl bg-gray-100">
+                            <p className="text-gray-500 text-center">Carregando obras...</p>
+                          </div>
+                        ) : (
+                          <select
+                            id="obra_id"
+                            name="obra_id"
+                            value={selectedWork}
+                            onChange={(e) => {
+                              setSelectedWork(e.target.value);
+                              setSelectedCostCenters([]); // Limpar seleção ao mudar obra
+                            }}
+                            className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            required
+                          >
+                            <option value="">Selecione uma obra</option>
+                            {works.map(work => (
+                              <option key={work.id} value={work.id}>
+                                {work.initials} - {work.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      {/* Seleção de centros de custo */}
+                      {selectedWork && (
+                        <div className="space-y-3">
+                          <label className="block text-sm font-medium text-gray-700">
+                            Centros de Custo
+                          </label>
+                          
+                          {loadingCostCenters ? (
+                            <div className="p-2 border border-gray-300 rounded-2xl bg-gray-100">
+                              <p className="text-gray-500 text-center">Carregando centros de custo...</p>
+                            </div>
+                          ) : (
+                            <>
+                              {/* Dropdown para adicionar centros de custo */}
+                              {availableCostCenters.length > 0 ? (
+                                <select
+                                  className="w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      handleAddCostCenter(e.target.value);
+                                      e.target.value = ""; // Resetar seleção
+                                    }
+                                  }}
+                                >
+                                  <option value="">Selecione um centro de custo</option>
+                                  {availableCostCenters.map(center => (
+                                    <option key={center.Centro_Negocio_Cod} value={center.Centro_Negocio_Cod}>
+                                      {center.Centro_Nome}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <p className="text-sm text-gray-500">
+                                  {costCenters.length > 0 
+                                    ? "Todos os centros de custo já foram selecionados" 
+                                    : "Nenhum centro de custo disponível para esta obra"}
+                                </p>
+                              )}
+
+                              {/* Lista de centros de custo selecionados */}
+                              {selectedCostCenters.length > 0 && (
+                                <div className="space-y-2">
+                                  <p className="text-sm font-medium">Centros de custo selecionados:</p>
+                                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                                    {selectedCostCenters.map(code => {
+                                      const center = costCenters.find(c => c.Centro_Negocio_Cod === code);
+                                      return (
+                                        <div key={code} className="flex items-center justify-between p-2 bg-gray-100 rounded-lg">
+                                          <span>{center?.Centro_Nome || code}</span>
+                                          <Button
+                                            type="button"
+                                            onClick={() => handleRemoveCostCenter(code)}
+                                            className="p-1 text-red-500 hover:text-red-700"
+                                            variant="ghost"
+                                            size="sm"
+                                          >
+                                            <X size={16} />
+                                          </Button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
-                      ) : (
-                        <select
-                          id="obra_id"
-                          name="obra_id"
-                          value={selectedWork}
-                          onChange={(e) => setSelectedWork(e.target.value)}
-                          className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          required
-                        >
-                          <option value="">Selecione uma obra</option>
-                          {works.map(work => (
-                            <option key={work.id} value={work.id}>
-                              {work.initials} - {work.name}
-                            </option>
-                          ))}
-                        </select>
                       )}
-                    </div>
+                    </>
                   )}
                   
                   <button
@@ -349,7 +482,7 @@ const AddEmployeePage = () => {
                       formData.nome && 
                       formData.cpf && 
                       formData.tipo_funcionario &&
-                      (formData.tipo_funcionario !== "Almoxarife" || selectedWork)
+                      (formData.tipo_funcionario !== "Almoxarife" || (selectedWork && selectedCostCenters.length > 0))
                         ? "bg-blue-500 hover:bg-blue-600"
                         : "bg-gray-400 cursor-not-allowed"
                     }`}
@@ -357,7 +490,7 @@ const AddEmployeePage = () => {
                       !formData.nome || 
                       !formData.cpf || 
                       !formData.tipo_funcionario ||
-                      (formData.tipo_funcionario === "Almoxarife" && !selectedWork) ||
+                      (formData.tipo_funcionario === "Almoxarife" && (!selectedWork || selectedCostCenters.length === 0)) ||
                       loadingForm
                     }
                     id="cadastrar-funcionario"

@@ -3,6 +3,7 @@ import api from "./axios";
 interface CostCenterProps {
   Centro_Negocio_Cod: string;
   Centro_Nome: string;
+  work_id?: number;
 }
 
 export const login = async (cpf: string, senha: string) => {
@@ -181,14 +182,84 @@ export const generateReport = async (
 };
 
 // ===========================================
+// NOVOS ENDPOINTS PARA ASSOCIAÇÃO FUNCIONÁRIO-CENTRO DE CUSTO
+// ===========================================
+
+/**
+ * Interface para dados de associação de centros de custo
+ */
+interface FuncionarioCentroCustoCreate {
+  centros_custo_cod: string[];
+}
+
+/**
+ * Associar centros de custo a um funcionário
+ * @param funcionarioId ID do funcionário
+ * @param centrosCustoCod Lista de códigos de centros de custo para associar
+ */
+export const associarCentrosCustoFuncionario = async (
+  funcionarioId: number,
+  centrosCustoCod: string[]
+): Promise<void> => {
+  const data: FuncionarioCentroCustoCreate = {
+    centros_custo_cod: centrosCustoCod,
+  };
+
+  await api.post(`/funcionarios/${funcionarioId}/centros-custo`, data);
+};
+
+/**
+ * Listar centros de custo associados a um funcionário
+ * @param funcionarioId ID do funcionário
+ * @returns Lista de centros de custo associados
+ */
+export const listarCentrosCustoFuncionario = async (
+  funcionarioId: number
+): Promise<CostCenterProps[]> => {
+  const response = await api.get(
+    `/funcionarios/${funcionarioId}/centros-custo`
+  );
+  return response.data;
+};
+
+/**
+ * Remover centro de custo de um funcionário
+ * @param funcionarioId ID do funcionário
+ * @param centroCod Código do centro de custo a ser removido
+ */
+export const removerCentroCustoFuncionario = async (
+  funcionarioId: number,
+  centroCod: string
+): Promise<void> => {
+  await api.delete(`/funcionarios/${funcionarioId}/centros-custo/${centroCod}`);
+};
+
+/**
+ * Buscar centros de custo por obra
+ * @param obraId ID da obra (opcional)
+ * @returns Lista de centros de custo filtrados por obra
+ */
+export const getCostCentersByWork = async (
+  obraId?: number
+): Promise<CostCenterProps[]> => {
+  const params: Record<string, any> = {};
+  if (obraId) params.work_id = obraId;
+
+  const response = await api.get("/cost-center", { params });
+  return response.data;
+};
+
+// ===========================================
 // ENDPOINTS PARA OBRAS E CENTROS DE CUSTO
 // ===========================================
 
-//Prop de centro de custo
+// Interface atualizada para centro de custo incluindo work_id
 export interface CentrosCustoProps {
   Centro_Negocio_Cod: string;
   Centro_Nome: string;
+  work_id: number;
 }
+
 // Pegar todos os centros de custo
 export const getAllCostCenter = async (
   obraId?: number | null
