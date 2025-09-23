@@ -274,13 +274,9 @@ export const getUserCostCenters = async (): Promise<CentrosCustoProps[]> => {
 /**
  * (Admin) Buscar centros de custo por obra (usa query param work_id)
  */
-export const getCostCentersByWork = async (
-  obraId?: number
-): Promise<CentrosCustoProps[]> => {
-  const params: Record<string, any> = {};
-  if (obraId) params.work_id = obraId;
-  const response = await api.get("/cost-center", { params });
-  return response.data;
+export const getCostCentersByWork = async (workId: number) => {
+  const { data } = await api.get(`/work/${workId}/cost-centers`);
+  return data as { Centro_Negocio_Cod: string; Centro_Nome: string }[];
 };
 
 /**

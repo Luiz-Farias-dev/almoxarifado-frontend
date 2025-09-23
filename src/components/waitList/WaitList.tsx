@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -38,7 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MoreHorizontal, Trash2 } from "lucide-react";
-import { getWaitingList, removeProductFromWaitingList, getAllCostCenter } from "@/api/endpoints";
+import { getWaitingList, removeProductFromWaitingList, getAllWorks } from "@/api/endpoints";
 import LoadingSpinner from "../LoadingSpinner";
 import { SelectedProducts, SelectedProduct } from "./SelectedProducts";
 import Header from "../Header";
@@ -63,16 +63,16 @@ export type Produto = {
   destino: string;
 };
 
-type CentrosCustoProps = {
-  Centro_Negocio_Cod: string;
-  Centro_Nome: string;
-  work_id?: number;
-};
-
 type UserInfo = {
   tipo: string;
   obra_id: number | null;
   nome: string;
+};
+
+type Work = {
+  id: number;
+  initials: string;
+  name: string;
 };
 
 const ActionCell = ({
@@ -268,158 +268,135 @@ export const columns = (
 export function WaitListPage() {
   const [data, setData] = useState<Produto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [skip, setSkip] = useState(0);
+
+  // paginação com ref (evita estado não lido)
+  const skipRef = useRef(0);
   const limit = 100;
+
+  // filtros
   const [filterNomeProduto, setFilterNomeProduto] = useState("");
   const [filterDestino, setFilterDestino] = useState("");
   const [filterCodigoPedido, setFilterCodigoPedido] = useState("");
+
+  // tabela
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState<{ [key: string]: boolean }>({});
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
-  const [centrosCustoObra, setCentrosCustoObra] = useState<CentrosCustoProps[]>([]);
+
+  // usuário e obras (para Admin)
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [works, setWorks] = useState<Work[]>([]);
+  const [selectedWorkId, setSelectedWorkId] = useState<string>(""); // apenas Admin usa
+
   const { toast } = useToast();
-  
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const user = getUserInfoFromToken();
     setUserInfo(user);
-    
-    if (user?.tipo === 'Almoxarife' && user.obra_id) {
-      fetchCentrosCustoObra(user.obra_id);
-    } else {
-      // Se não for almoxarife, buscar dados diretamente
-      fetchData(0, false);
-    }
   }, []);
 
-  const fetchCentrosCustoObra = async (obraId: number) => {
-    try {
-      const response = await getAllCostCenter(obraId);
-      setCentrosCustoObra(response);
-    } catch (error) {
-      console.error("Erro ao buscar centros de custo da obra:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Falha ao carregar centros de custo da obra",
-      });
-    }
-  };
-
-  async function fetchData(
-    newSkip: number, 
-    append: boolean, 
-    codigoPedido: string = filterCodigoPedido,
-    buscaDestimo: string = filterDestino,
-    buscaNomeProduto: string = filterNomeProduto,
-  ) {
-    setIsLoading(true);
-    try {
-      const response = await getWaitingList({
-        skip: newSkip,
-        limit,
-        codigo_pedido: codigoPedido || undefined,
-        destino: buscaDestimo || undefined,
-        SubInsumo_Especificacao: buscaNomeProduto || undefined,
-      });
-
-      // Filtrar pelos centros de custo da obra apenas se for almoxarife
-      let filteredData = response;
-      if (userInfo?.tipo === 'Almoxarife' && centrosCustoObra.length > 0) {
-        const nomesCentrosCustoObra = centrosCustoObra.map(centro => centro.Centro_Nome);
-        filteredData = response.filter((produto: Produto) => 
-          nomesCentrosCustoObra.includes(produto.centro_custo.Centro_Nome)
-        );
-      }
-
-      if (append) {
-        setData((prev) => [...prev, ...filteredData]);
-      } else {
-        setData(filteredData);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar lista de espera:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  const handleSearchByProductName = () => {
-    setSkip(0);
-    setData([]);
-    fetchData(0, false);
-  };
-  
-  const handleSearchByDestiny = () => {
-    setSkip(0);
-    setData([]);
-    fetchData(0, false);
-  };
-  
-  const handleSearchByOrderNumber = () => {
-    setSkip(0);
-    setData([]);
-    fetchData(0, false);
-  };
-  
-  const handleClearProductNameFilter = () => {
-    setFilterNomeProduto("");
-    setSkip(0);
-    setData([]);
-    fetchData(0, false, filterCodigoPedido, filterDestino, "");
-  };
-  
-  const handleClearDestinyFilter = () => {
-    setFilterDestino("");
-    setSkip(0);
-    setData([]);
-    fetchData(0, false, filterCodigoPedido, "", filterNomeProduto);
-  };
-  
-  const handleClearOrderCodeFilter = () => {
-    setFilterCodigoPedido("");
-    setSkip(0);
-    setData([]);
-    fetchData(0, false, "");
-  };
-
-  const handleRemoveProductFromTable = (removedProducts: number[]) => {
-    setData(prevData =>
-      prevData.filter(produto => !removedProducts.includes(produto.id))
-    );
-  };
-
   useEffect(() => {
-    if (userInfo && (userInfo.tipo !== 'Almoxarife' || centrosCustoObra.length > 0)) {
-      fetchData(0, false);
-    }
-  }, [userInfo, centrosCustoObra]);
+    // Carrega obras para Admin
+    const loadWorks = async () => {
+      if (userInfo?.tipo === "Administrador") {
+        try {
+          const ws = await getAllWorks();
+          setWorks(ws);
+        } catch (err) {
+          console.error("Erro ao carregar obras:", err);
+          toast({
+            variant: "destructive",
+            title: "Erro",
+            description: "Falha ao carregar obras",
+          });
+        }
+      }
+    };
+    loadWorks();
+  }, [userInfo, toast]);
 
+  const fetchData = useCallback(
+    async (
+      newSkip: number,
+      append: boolean,
+      codigoPedido: string = filterCodigoPedido,
+      buscaDestino: string = filterDestino,
+      buscaNomeProduto: string = filterNomeProduto,
+      workIdOverride?: string
+    ) => {
+      setIsLoading(true);
+      try {
+        const work_id =
+          userInfo?.tipo === "Administrador"
+            ? Number(workIdOverride ?? selectedWorkId) || undefined
+            : undefined;
+
+        // monta params respeitando o tipo do endpoint
+        const params: any = {
+          skip: newSkip,
+          limit,
+          codigo_pedido: codigoPedido || undefined,
+          destino: buscaDestino || undefined,
+          SubInsumo_Especificacao: buscaNomeProduto || undefined,
+        };
+        if (work_id !== undefined) {
+          params.work_id = work_id;
+        }
+
+        const response = await getWaitingList(params);
+
+        if (append) {
+          setData((prev) => [...prev, ...response]);
+        } else {
+          setData(response);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar lista de espera:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [
+      filterCodigoPedido,
+      filterDestino,
+      filterNomeProduto,
+      limit,
+      selectedWorkId,
+      userInfo?.tipo,
+    ]
+  );
+
+  // primeira carga (e quando mudar a obra para Admin)
+  useEffect(() => {
+    if (!userInfo) return;
+    skipRef.current = 0;
+    fetchData(0, false);
+  }, [userInfo, selectedWorkId, fetchData]);
+
+  // scroll infinito
   useEffect(() => {
     const container = scrollContainerRef.current;
-    if (!container || data.length < 100) return;
+    if (!container) return;
 
     const handleScroll = () => {
       if (
         container.scrollTop + container.clientHeight >=
         container.scrollHeight - 10
       ) {
-        setSkip(prevSkip => {
-          const newSkip = prevSkip + limit;
-          fetchData(newSkip, true);
-          return newSkip;
-        });
+        const newSkip = skipRef.current + limit;
+        skipRef.current = newSkip;
+        fetchData(newSkip, true);
       }
     };
 
     container.addEventListener("scroll", handleScroll);
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [data.length, userInfo, centrosCustoObra]);
+  }, [fetchData, limit]);
 
+  // manter SelectedProducts sincronizado com seleção de linhas
   useEffect(() => {
     const selectedIds = Object.keys(rowSelection)
       .filter(key => rowSelection[key])
@@ -456,7 +433,7 @@ export function WaitListPage() {
     ];
 
     setSelectedProducts(combinedSelected);
-  }, [rowSelection, data]);
+  }, [rowSelection, data, selectedProducts]);
 
   const table = useReactTable({
     data,
@@ -477,18 +454,95 @@ export function WaitListPage() {
     },
   });
 
+  // Handlers de busca/limpar (consideram work_id automaticamente via fetchData)
+  const handleSearchByProductName = () => {
+    skipRef.current = 0;
+    setData([]);
+    fetchData(0, false);
+  };
+  
+  const handleSearchByDestiny = () => {
+    skipRef.current = 0;
+    setData([]);
+    fetchData(0, false);
+  };
+  
+  const handleSearchByOrderNumber = () => {
+    skipRef.current = 0;
+    setData([]);
+    fetchData(0, false);
+  };
+  
+  const handleClearProductNameFilter = () => {
+    setFilterNomeProduto("");
+    skipRef.current = 0;
+    setData([]);
+    fetchData(0, false, filterCodigoPedido, filterDestino, "");
+  };
+  
+  const handleClearDestinyFilter = () => {
+    setFilterDestino("");
+    skipRef.current = 0;
+    setData([]);
+    fetchData(0, false, filterCodigoPedido, "", filterNomeProduto);
+  };
+  
+  const handleClearOrderCodeFilter = () => {
+    setFilterCodigoPedido("");
+    skipRef.current = 0;
+    setData([]);
+    fetchData(0, false, "");
+  };
+
+  // ✅ Handler usado por SelectedProducts para remover da tabela e limpar seleção
+  const handleSendProductsSuccess = (removedProducts: number[]) => {
+    setData(prev => prev.filter(p => !removedProducts.includes(p.id)));
+    setRowSelection(prev => {
+      const updated = { ...prev };
+      removedProducts.forEach(id => delete updated[String(id)]);
+      return updated;
+    });
+    setSelectedProducts(prev => prev.filter(p => !removedProducts.includes(p.id)));
+  };
+
   return (
     <div className="w-full px-5">
       <Header title="Autorização de Requisição" />
-      
-      {userInfo?.tipo === 'Almoxarife' && centrosCustoObra.length > 0 && (
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-700">
-            Mostrando apenas requisições dos centros de custo da sua obra
-          </p>
+
+      {userInfo?.tipo === "Administrador" && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Filtrar por obra (Admin)
+          </label>
+          <div className="flex gap-2">
+            <select
+              value={selectedWorkId}
+              onChange={(e) => {
+                setSelectedWorkId(e.target.value); // dispara efeito que refaz busca
+              }}
+              className="rounded-2xl border px-3 py-2 w-full max-w-sm"
+            >
+              <option value="">Todas as obras</option>
+              {works.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.initials} - {w.name}
+                </option>
+              ))}
+            </select>
+            <Button
+              onClick={() => {
+                skipRef.current = 0;
+                setData([]);
+                fetchData(0, false);
+              }}
+              className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
+            >
+              Aplicar
+            </Button>
+          </div>
         </div>
       )}
-
+      
       <div className="flex flex-col sm:flex-row items-center py-4 gap-4">
         <div className="flex flex-col w-full max-w-lg">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -654,6 +708,7 @@ export function WaitListPage() {
               return updated;
             });
           }}
+          onSendProductsSuccess={handleSendProductsSuccess}
         />
       )}
     </div>
