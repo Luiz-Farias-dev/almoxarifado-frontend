@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -38,7 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MoreHorizontal, Trash2 } from "lucide-react";
-import { getWaitingList, removeProductFromWaitingList, getAllWorks } from "@/api/endpoints";
+import { getWaitingList, removeProductFromWaitingList, getAllCostCenter } from "@/api/endpoints";
 import LoadingSpinner from "../LoadingSpinner";
 import { SelectedProducts, SelectedProduct } from "./SelectedProducts";
 import Header from "../Header";
@@ -69,24 +69,33 @@ type UserInfo = {
   nome: string;
 };
 
-type Work = {
-  id: number;
-  initials: string;
-  name: string;
+// Função para mapear Produto para SelectedProduct
+const mapProdutoToSelectedProduct = (produto: Produto): SelectedProduct => {
+  return {
+    id: produto.id,
+    codigo_pedido: Number(produto.codigo_pedido),
+    Insumo_Cod: produto.Insumo_Cod,
+    SubInsumo_Cod: produto.SubInsumo_Cod,
+    SubInsumo_Especificacao: produto.SubInsumo_Especificacao,
+    quantidade: produto.quantidade,
+    Unid_Cod: produto.Unid_Cod,
+    centro_custo: produto.centro_custo,
+    almoxarife_nome: produto.almoxarife_nome,
+    destino: produto.destino,
+  };
 };
 
-const ActionCell = ({
-  row,
-  setData,
-  setRowSelection
-}: {
+interface ActionCellProps {
   row: any;
   setData: React.Dispatch<React.SetStateAction<Produto[]>>;
   setRowSelection: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>;
-}) => {
+}
+
+const ActionCell: React.FC<ActionCellProps> = ({ row, setData, setRowSelection }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
 
   const handleDelete = async () => {
     const produto = row.original;
@@ -99,17 +108,25 @@ const ActionCell = ({
         produto.SubInsumo_Cod,
       );
       
-      setData(prevData => 
-        prevData.filter(item => item.id !== produto.id)
-      );
+      setData(prevData => prevData.filter(item => item.id !== produto.id));
       
       setRowSelection(prev => {
         const updated = { ...prev };
         delete updated[produto.id.toString()];
         return updated;
       });
+
+      toast({
+        title: "Sucesso",
+        description: "Item removido da lista de espera",
+      });
     } catch (error) {
       console.error("Erro ao remover produto:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao remover item da lista de espera",
+      });
     } finally {
       setIsDeleting(false);
       setIsDialogOpen(false);
@@ -122,7 +139,7 @@ const ActionCell = ({
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-8 w-8 p-0">
           <span className="sr-only">Abrir menu</span>
-          <MoreHorizontal />
+          <MoreHorizontal className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -131,10 +148,11 @@ const ActionCell = ({
             setIsDialogOpen(true);
             setIsDropdownOpen(false);
           }}
+          className="text-red-600 focus:text-red-700"
         >
           <div className="flex items-center gap-2">
-            <Trash2 color="red" size={10}/>
-            <span className="text-red-500 hover:text-red-700">Excluir Item</span>
+            <Trash2 className="h-4 w-4" />
+            <span>Excluir Item</span>
           </div>
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -171,274 +189,206 @@ const ActionCell = ({
   );
 };
 
-export const columns = (
-  setData: React.Dispatch<React.SetStateAction<Produto[]>>,
-  setRowSelection: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>
-): ColumnDef<Produto>[] => [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "codigo_pedido",
-    header: "Código do Pedido",
-    cell: ({ row }) => <div>{row.getValue("codigo_pedido")}</div>,
-  },
-  {
-    accessorKey: "Insumo_Cod",
-    header: "Código do Insumo",
-    cell: ({ row }) => (
-      <div>
-        {row.original.Insumo_Cod}-{row.original.SubInsumo_Cod}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "SubInsumo_Especificacao",
-    header: "Especificação",
-    cell: ({ row }) => <div>{row.getValue("SubInsumo_Especificacao")}</div>,
-  },
-  {
-    accessorKey: "centro_custo",
-    header: "Centro de Custo",
-    cell: ({ row }) => {
-      const centroCusto = row.getValue("centro_custo") as Produto["centro_custo"];
-      return <div>{centroCusto.Centro_Nome}</div>;
-    },
-  },
-  {
-    accessorKey: "almoxarife_nome",
-    header: "Nome do Almoxarife",
-    cell: ({ row }) => <div>{row.getValue("almoxarife_nome")}</div>,
-  },
-  {
-    accessorKey: "Unid_Cod",
-    header: "Unidade",
-    cell: ({ row }) => <div>{row.getValue("Unid_Cod")}</div>,
-  },
-  {
-    accessorKey: "quantidade",
-    header: "Quantidade",
-    cell: ({ row }) => <div>{row.getValue("quantidade")}</div>,
-  },
-  {
-    accessorKey: "destino",
-    header: "Destino",
-    cell: ({ row }) => <div>{row.getValue("destino")}</div>,
-  },
-  {
-    accessorKey: "data_att",
-    header: "Data de Atualização",
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("data_att"));
-      return <div>{date.toLocaleString()}</div>;
-    },
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => (
-      <ActionCell
-        row={row}
-        setData={setData}
-        setRowSelection={setRowSelection}
-      />
-    ),
-  }  
-];
-
 export function WaitListPage() {
   const [data, setData] = useState<Produto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
 
-  // paginação com ref (evita estado não lido)
   const skipRef = useRef(0);
   const limit = 100;
 
-  // filtros
+  // Filtros
   const [filterNomeProduto, setFilterNomeProduto] = useState("");
   const [filterDestino, setFilterDestino] = useState("");
   const [filterCodigoPedido, setFilterCodigoPedido] = useState("");
 
-  // tabela
+  // Tabela
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState<{ [key: string]: boolean }>({});
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
 
-  // usuário e obras (para Admin)
+  // Usuário
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [works, setWorks] = useState<Work[]>([]);
-  const [selectedWorkId, setSelectedWorkId] = useState<string>(""); // apenas Admin usa
+  const [centrosCustoObra, setCentrosCustoObra] = useState<Produto["centro_custo"][]>([]);
 
   const { toast } = useToast();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const user = getUserInfoFromToken();
-    setUserInfo(user);
-  }, []);
+  // Memoizar fetchCentrosCustoObra
+  const fetchCentrosCustoObra = useCallback(async (obraId: number) => {
+    try {
+      const response = await getAllCostCenter(obraId);
+      setCentrosCustoObra(response);
+    } catch (error) {
+      console.error("Erro ao buscar centros de custo da obra:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao carregar centros de custo da obra",
+      });
+    }
+  }, [toast]);
 
-  useEffect(() => {
-    // Carrega obras para Admin
-    const loadWorks = async () => {
-      if (userInfo?.tipo === "Administrador") {
-        try {
-          const ws = await getAllWorks();
-          setWorks(ws);
-        } catch (err) {
-          console.error("Erro ao carregar obras:", err);
-          toast({
-            variant: "destructive",
-            title: "Erro",
-            description: "Falha ao carregar obras",
-          });
-        }
-      }
-    };
-    loadWorks();
-  }, [userInfo, toast]);
-
-  const fetchData = useCallback(
-    async (
-      newSkip: number,
-      append: boolean,
-      codigoPedido: string = filterCodigoPedido,
-      buscaDestino: string = filterDestino,
-      buscaNomeProduto: string = filterNomeProduto,
-      workIdOverride?: string
-    ) => {
+  // Memoizar fetchData com dependências fixas
+  const fetchData = useCallback(async (
+    newSkip: number,
+    append: boolean,
+    codigoPedido?: string,
+    buscaDestino?: string,
+    buscaNomeProduto?: string
+  ) => {
+    if (!append) {
       setIsLoading(true);
-      try {
-        const work_id =
-          userInfo?.tipo === "Administrador"
-            ? Number(workIdOverride ?? selectedWorkId) || undefined
-            : undefined;
+      setHasMore(true);
+    }
+    
+    try {
+      const actualCodigoPedido = codigoPedido ?? filterCodigoPedido;
+      const actualBuscaDestino = buscaDestino ?? filterDestino;
+      const actualBuscaNomeProduto = buscaNomeProduto ?? filterNomeProduto;
 
-        // monta params respeitando o tipo do endpoint
-        const params: any = {
-          skip: newSkip,
-          limit,
-          codigo_pedido: codigoPedido || undefined,
-          destino: buscaDestino || undefined,
-          SubInsumo_Especificacao: buscaNomeProduto || undefined,
-        };
-        if (work_id !== undefined) {
-          params.work_id = work_id;
-        }
-
-        const response = await getWaitingList(params);
-
-        if (append) {
-          setData((prev) => [...prev, ...response]);
-        } else {
-          setData(response);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar lista de espera:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [
-      filterCodigoPedido,
-      filterDestino,
-      filterNomeProduto,
-      limit,
-      selectedWorkId,
-      userInfo?.tipo,
-    ]
-  );
-
-  // primeira carga (e quando mudar a obra para Admin)
-  useEffect(() => {
-    if (!userInfo) return;
-    skipRef.current = 0;
-    fetchData(0, false);
-  }, [userInfo, selectedWorkId, fetchData]);
-
-  // scroll infinito
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      if (
-        container.scrollTop + container.clientHeight >=
-        container.scrollHeight - 10
-      ) {
-        const newSkip = skipRef.current + limit;
-        skipRef.current = newSkip;
-        fetchData(newSkip, true);
-      }
-    };
-
-    container.addEventListener("scroll", handleScroll);
-    return () => container.removeEventListener("scroll", handleScroll);
-  }, [fetchData, limit]);
-
-  // manter SelectedProducts sincronizado com seleção de linhas
-  useEffect(() => {
-    const selectedIds = Object.keys(rowSelection)
-      .filter(key => rowSelection[key])
-      .map(key => parseInt(key, 10));
-
-    const stillSelected = selectedProducts.filter(p => 
-      selectedIds.includes(p.id)
-    );
-
-    const newlySelected = data
-      .filter(produto => selectedIds.includes(produto.id))
-      .map(produto => {
-        const existing = stillSelected.find(p => p.id === produto.id);
-        
-        return existing || {
-          id: produto.id,
-          almoxarife_nome: produto.almoxarife_nome,
-          Unid_Cod: produto.Unid_Cod,
-          SubInsumo_Especificacao: produto.SubInsumo_Especificacao,
-          codigo_pedido: Number(produto.codigo_pedido),
-          centro_custo: produto.centro_custo,
-          Insumo_Cod: produto.Insumo_Cod,
-          SubInsumo_Cod: produto.SubInsumo_Cod,
-          quantidade: produto.quantidade,
-          destino: produto.destino,
-        };
+      const response = await getWaitingList({
+        skip: newSkip,
+        limit,
+        codigo_pedido: actualCodigoPedido || undefined,
+        destino: actualBuscaDestino || undefined,
+        SubInsumo_Especificacao: actualBuscaNomeProduto || undefined,
       });
 
-    const combinedSelected = [
-      ...stillSelected,
-      ...newlySelected.filter(
-        newProd => !stillSelected.some(oldProd => oldProd.id === newProd.id)
+      if (append) {
+        setData((prev) => [...prev, ...response]);
+      } else {
+        setData(response);
+        skipRef.current = 0;
+      }
+
+      setHasMore(response.length === limit);
+    } catch (error) {
+      console.error("Erro ao buscar lista de espera:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao carregar lista de espera",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [limit, toast, filterCodigoPedido, filterDestino, filterNomeProduto]);
+
+  // Colunas memoizadas - CRÍTICO para evitar loops
+  const tableColumns = useMemo((): ColumnDef<Produto>[] => [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
       ),
-    ];
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "codigo_pedido",
+      header: "Código do Pedido",
+      cell: ({ row }) => <div>{row.getValue("codigo_pedido")}</div>,
+    },
+    {
+      accessorKey: "Insumo_Cod",
+      header: "Código do Insumo",
+      cell: ({ row }) => (
+        <div>
+          {row.original.Insumo_Cod}-{row.original.SubInsumo_Cod}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "SubInsumo_Especificacao",
+      header: "Especificação",
+      cell: ({ row }) => <div>{row.getValue("SubInsumo_Especificacao")}</div>,
+    },
+    {
+      accessorKey: "centro_custo",
+      header: "Centro de Custo",
+      cell: ({ row }) => {
+        const centroCusto = row.getValue("centro_custo") as Produto["centro_custo"];
+        return <div>{centroCusto.Centro_Nome}</div>;
+      },
+    },
+    {
+      accessorKey: "almoxarife_nome",
+      header: "Nome do Almoxarife",
+      cell: ({ row }) => <div>{row.getValue("almoxarife_nome")}</div>,
+    },
+    {
+      accessorKey: "Unid_Cod",
+      header: "Unidade",
+      cell: ({ row }) => <div>{row.getValue("Unid_Cod")}</div>,
+    },
+    {
+      accessorKey: "quantidade",
+      header: "Quantidade",
+      cell: ({ row }) => <div>{row.getValue("quantidade")}</div>,
+    },
+    {
+      accessorKey: "destino",
+      header: "Destino",
+      cell: ({ row }) => <div>{row.getValue("destino")}</div>,
+    },
+    {
+      accessorKey: "data_att",
+      header: "Data de Atualização",
+      cell: ({ row }) => {
+        const date = new Date(row.getValue("data_att"));
+        return <div>{date.toLocaleString('pt-BR')}</div>;
+      },
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => (
+        <ActionCell
+          row={row}
+          setData={setData}
+          setRowSelection={setRowSelection}
+        />
+      ),
+    }
+  ], [setData, setRowSelection]);
 
-    setSelectedProducts(combinedSelected);
-  }, [rowSelection, data, selectedProducts]);
+  // Dados filtrados para almoxarife
+  const filteredDataForAlmoxarife = useMemo(() => {
+    if (userInfo?.tipo === "Almoxarife" && centrosCustoObra.length > 0) {
+      const nomesCentrosCustoObra = centrosCustoObra.map(centro => centro.Centro_Nome);
+      return data.filter((produto: Produto) => 
+        nomesCentrosCustoObra.includes(produto.centro_custo.Centro_Nome)
+      );
+    }
+    return data;
+  }, [data, centrosCustoObra, userInfo]);
 
+  // Dados finais para a tabela
+  const tableData = useMemo(() => {
+    return filteredDataForAlmoxarife;
+  }, [filteredDataForAlmoxarife]);
+
+  // Tabela com dados memoizados
   const table = useReactTable({
-    data,
-    columns: columns(setData, setRowSelection),
-    getRowId: (row) => String(row.id),
+    data: tableData,
+    columns: tableColumns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -454,196 +404,186 @@ export function WaitListPage() {
     },
   });
 
-  // Handlers de busca/limpar (consideram work_id automaticamente via fetchData)
-  const handleSearchByProductName = () => {
-    skipRef.current = 0;
-    setData([]);
-    fetchData(0, false);
-  };
-  
-  const handleSearchByDestiny = () => {
-    skipRef.current = 0;
-    setData([]);
-    fetchData(0, false);
-  };
-  
-  const handleSearchByOrderNumber = () => {
-    skipRef.current = 0;
-    setData([]);
-    fetchData(0, false);
-  };
-  
-  const handleClearProductNameFilter = () => {
-    setFilterNomeProduto("");
-    skipRef.current = 0;
-    setData([]);
-    fetchData(0, false, filterCodigoPedido, filterDestino, "");
-  };
-  
-  const handleClearDestinyFilter = () => {
-    setFilterDestino("");
-    skipRef.current = 0;
-    setData([]);
-    fetchData(0, false, filterCodigoPedido, "", filterNomeProduto);
-  };
-  
-  const handleClearOrderCodeFilter = () => {
-    setFilterCodigoPedido("");
-    skipRef.current = 0;
-    setData([]);
-    fetchData(0, false, "");
-  };
+  // Carregar info do usuário
+  useEffect(() => {
+    const user = getUserInfoFromToken();
+    setUserInfo(user);
+  }, []);
 
-  // ✅ Handler usado por SelectedProducts para remover da tabela e limpar seleção
-  const handleSendProductsSuccess = (removedProducts: number[]) => {
-    setData(prev => prev.filter(p => !removedProducts.includes(p.id)));
-    setRowSelection(prev => {
-      const updated = { ...prev };
-      removedProducts.forEach(id => delete updated[String(id)]);
-      return updated;
-    });
-    setSelectedProducts(prev => prev.filter(p => !removedProducts.includes(p.id)));
-  };
+  // Carregar dados quando userInfo mudar
+  useEffect(() => {
+    if (userInfo) {
+      if (userInfo.tipo === "Almoxarife" && userInfo.obra_id) {
+        fetchCentrosCustoObra(userInfo.obra_id);
+      } else {
+        fetchData(0, false);
+      }
+    }
+  }, [userInfo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Carregar dados quando centros de custo mudarem (para almoxarife)
+  useEffect(() => {
+    if (userInfo?.tipo === "Almoxarife" && centrosCustoObra.length > 0) {
+      fetchData(0, false);
+    }
+  }, [centrosCustoObra]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Recarregar dados quando filtros mudarem
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      skipRef.current = 0;
+      fetchData(0, false);
+    }, 300); // Debounce de 300ms
+
+    return () => clearTimeout(timeoutId);
+  }, [filterCodigoPedido, filterDestino, filterNomeProduto]);
+
+  // Scroll infinito
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !hasMore || isLoading) return;
+
+    let isFetching = false;
+
+    const handleScroll = () => {
+      if (isFetching) return;
+
+      const { scrollTop, clientHeight, scrollHeight } = container;
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 50;
+
+      if (isNearBottom) {
+        isFetching = true;
+        const newSkip = skipRef.current + limit;
+        skipRef.current = newSkip;
+        
+        fetchData(newSkip, true).finally(() => {
+          isFetching = false;
+        });
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [hasMore, isLoading, fetchData, limit]);
+
+  // Atualizar produtos selecionados
+  useEffect(() => {
+    const selectedRows = table.getSelectedRowModel().rows;
+    const products: SelectedProduct[] = selectedRows.map(row => 
+      mapProdutoToSelectedProduct(row.original)
+    );
+    setSelectedProducts(products);
+  }, [rowSelection, table]);
+
+  const handleSendProductsSuccess = useCallback(() => {
+    setRowSelection({});
+    fetchData(0, false);
+  }, [fetchData]);
+
+  const handleClearFilters = useCallback(() => {
+    setFilterCodigoPedido("");
+    setFilterNomeProduto("");
+    setFilterDestino("");
+  }, []);
+
+  const handleSearch = useCallback(() => {
+    skipRef.current = 0;
+    fetchData(0, false);
+  }, [fetchData]);
 
   return (
     <div className="w-full px-5">
       <Header title="Autorização de Requisição" />
 
-      {userInfo?.tipo === "Administrador" && (
-        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar por obra (Admin)
-          </label>
-          <div className="flex gap-2">
-            <select
-              value={selectedWorkId}
-              onChange={(e) => {
-                setSelectedWorkId(e.target.value); // dispara efeito que refaz busca
-              }}
-              className="rounded-2xl border px-3 py-2 w-full max-w-sm"
-            >
-              <option value="">Todas as obras</option>
-              {works.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.initials} - {w.name}
-                </option>
-              ))}
-            </select>
-            <Button
-              onClick={() => {
-                skipRef.current = 0;
-                setData([]);
-                fetchData(0, false);
-              }}
-              className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
-            >
-              Aplicar
-            </Button>
-          </div>
-        </div>
-      )}
-      
-      <div className="flex flex-col sm:flex-row items-center py-4 gap-4">
-        <div className="flex flex-col w-full max-w-lg">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar por código do pedido
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                placeholder="Digite o código do pedido"
-                value={filterCodigoPedido}
-                onChange={(e) => setFilterCodigoPedido(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearchByOrderNumber()}
-                className="rounded-2xl w-full pr-10"
-              />
-              {filterCodigoPedido && (
-                <button
-                  onClick={handleClearOrderCodeFilter}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            <Button
-              onClick={handleSearchByOrderNumber}
-              className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
-            >
-              Buscar
-            </Button>
+      {/* Filtros de Busca */}
+      <div className="flex flex-wrap gap-4 py-4">
+        <div className="flex flex-col w-full sm:w-1/3">
+          <label className="text-sm font-medium text-gray-700 mb-1">Código do Pedido</label>
+          <div className="relative flex gap-2">
+            <Input
+              placeholder="Digite o código do pedido"
+              value={filterCodigoPedido}
+              onChange={(e) => setFilterCodigoPedido(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="rounded-2xl w-full pr-10"
+            />
+            {filterCodigoPedido && (
+              <button
+                onClick={() => setFilterCodigoPedido("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex flex-col w-full max-w-lg">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar por especificação do insumo
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                placeholder="Digite a especificação do insumo"
-                value={filterNomeProduto}
-                onChange={(e) => setFilterNomeProduto(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearchByProductName()}
-                className="rounded-2xl w-full pr-10"
-              />
-              {filterNomeProduto && (
-                <button
-                  onClick={handleClearProductNameFilter}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            <Button
-              onClick={handleSearchByProductName}
-              className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
-            >
-              Buscar
-            </Button>
+        <div className="flex flex-col w-full sm:w-1/3">
+          <label className="text-sm font-medium text-gray-700 mb-1">Especificação do Insumo</label>
+          <div className="relative flex gap-2">
+            <Input
+              placeholder="Digite a especificação do insumo"
+              value={filterNomeProduto}
+              onChange={(e) => setFilterNomeProduto(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="rounded-2xl w-full pr-10"
+            />
+            {filterNomeProduto && (
+              <button
+                onClick={() => setFilterNomeProduto("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex flex-col w-full max-w-lg">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filtrar destino
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                placeholder="Digite o destino"
-                value={filterDestino}
-                onChange={(e) => setFilterDestino(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearchByDestiny()}
-                className="rounded-2xl w-full pr-10"
-              />
-              {filterDestino && (
-                <button
-                  onClick={handleClearDestinyFilter}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            <Button
-              onClick={handleSearchByDestiny}
-              className="bg-blue-500 text-white px-4 py-2 rounded-2xl"
-            >
-              Buscar
-            </Button>
+        <div className="flex flex-col w-full sm:w-1/3">
+          <label className="text-sm font-medium text-gray-700 mb-1">Destino</label>
+          <div className="relative flex gap-2">
+            <Input
+              placeholder="Digite o destino"
+              value={filterDestino}
+              onChange={(e) => setFilterDestino(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="rounded-2xl w-full pr-10"
+            />
+            {filterDestino && (
+              <button
+                onClick={() => setFilterDestino("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            )}
           </div>
+        </div>
+
+        <div className="flex items-end gap-2 w-full sm:w-auto">
+          <Button 
+            onClick={handleSearch}
+            className="rounded-2xl"
+          >
+            Buscar
+          </Button>
+          <Button 
+            onClick={handleClearFilters}
+            variant="outline"
+            className="rounded-2xl"
+          >
+            Limpar Filtros
+          </Button>
         </div>
       </div>
 
+      {/* Tabela */}
       <div
         ref={scrollContainerRef}
         className="rounded-2xl border h-[600px] overflow-auto relative"
       >
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 bg-gray-50 z-10">
             {table.getHeaderGroups().map(headerGroup => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map(header => (
@@ -676,7 +616,10 @@ export function WaitListPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns(setData, setRowSelection).length} className="h-22 text-center">
+                <TableCell 
+                  colSpan={tableColumns.length} 
+                  className="h-24 text-center"
+                >
                   {isLoading ? "Carregando..." : "Nenhum resultado encontrado."}
                 </TableCell>
               </TableRow>
@@ -688,6 +631,30 @@ export function WaitListPage() {
           <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10">
             <LoadingSpinner message="Carregando..." />
           </div>
+        )}
+
+        {!isLoading && hasMore && (
+          <div className="p-4 text-center text-gray-500">
+            Role para baixo para carregar mais itens...
+          </div>
+        )}
+      </div>
+      
+      {/* Informações de seleção */}
+      <div className="flex items-center justify-between py-4">
+        <div className="text-sm text-gray-600">
+          {table.getFilteredSelectedRowModel().rows.length} de{" "}
+          {table.getFilteredRowModel().rows.length} linha(s) selecionada(s)
+        </div>
+        
+        {table.getFilteredSelectedRowModel().rows.length > 0 && (
+          <Button
+            variant="outline"
+            onClick={() => table.resetRowSelection()}
+            className="rounded-2xl"
+          >
+            Limpar Seleção
+          </Button>
         )}
       </div>
       
