@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { addEmployee, addEmployeesFile } from "@/api/endpoints";
+import { addEmployee, addEmployeesFile, getAllWorks, getCostCentersByWork } from "@/api/endpoints";
 import { isValidCPF, formatCPF } from "@/utils/validateCpf";
 import {
   Accordion,
@@ -12,43 +12,145 @@ import { DropdownMenuRadioEmployeeType } from "./EmployeeTypeMenu";
 import LoadingSpinner from "../LoadingSpinner";
 import Header from "../Header";
 import { utils, write } from "xlsx";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+import axios from "axios";
+
+interface CostCenter {
+  Centro_Negocio_Cod: string;
+  Centro_Nome: string;
+}
 
 const AddEmployeePage = () => {
   const { toast } = useToast();
   const [cpfError, setCpfError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     nome: "",
-    matricula: "",
     cpf: "",
     tipo_funcionario: "",
   });
+  const [selectedWork, setSelectedWork] = useState<string>("");
+  const [works, setWorks] = useState<any[]>([]);
+  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
+  const [selectedCostCenters, setSelectedCostCenters] = useState<string[]>([]);
+  const [availableCostCenters, setAvailableCostCenters] = useState<CostCenter[]>([]);
+  const [loadingWorks, setLoadingWorks] = useState(false);
+  const [loadingCostCenters, setLoadingCostCenters] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [loadingForm, setLoadingForm] = useState<boolean>(false);
   const [loadingFile, setLoadingFile] = useState<boolean>(false);
+
+  // ===== Toast helpers (useCallback) =====
+  const handleSuccessToast = useCallback((message: string) => {
+    toast({ variant: "success", title: "Sucesso", description: message });
+  }, [toast]);
+
+  const handleWarningToast = useCallback((message: string) => {
+    toast({ variant: "warning", title: "Aviso", description: message });
+  }, [toast]);
+
+  const handleFailToast = useCallback((message: string) => {
+    toast({ variant: "destructive", title: "Erro", description: message });
+  }, [toast]);
+
+  // Buscar obras ao montar o componente
+  useEffect(() => {
+    const fetchWorks = async () => {
+      setLoadingWorks(true);
+      try {
+        const worksData = await getAllWorks();
+        setWorks(worksData);
+      } catch (error) {
+        console.error("Erro ao carregar obras:", error);
+        handleFailToast("Erro ao carregar obras. Tente novamente.");
+      } finally {
+        setLoadingWorks(false);
+      }
+    };
+    fetchWorks();
+    // deps vazias: roda apenas uma vez
+  }, [handleFailToast]);
+
+  // Buscar centros de custo quando uma obra for selecionada
+  useEffect(() => {
+    const fetchCostCenters = async () => {
+      if (!selectedWork) {
+        setCostCenters([]);
+        setAvailableCostCenters([]);
+        return;
+      }
+
+      setLoadingCostCenters(true);
+      try {
+        const costCentersData = await getCostCentersByWork(parseInt(selectedWork));
+        setCostCenters(costCentersData);
+        setAvailableCostCenters(costCentersData);
+      } catch (error) {
+        console.error("Erro ao carregar centros de custo:", error);
+        handleFailToast("Erro ao carregar centros de custo. Tente novamente.");
+      } finally {
+        setLoadingCostCenters(false);
+      }
+    };
+
+    fetchCostCenters();
+  }, [selectedWork, handleFailToast]);
+
+  // Atualizar centros de custo disponíveis quando a seleção mudar
+  useEffect(() => {
+    const filteredCenters = costCenters.filter(
+      (center) => !selectedCostCenters.includes(center.Centro_Negocio_Cod)
+    );
+    setAvailableCostCenters(filteredCenters);
+  }, [selectedCostCenters, costCenters]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleAddCostCenter = (costCenterCode: string) => {
+    if (costCenterCode && !selectedCostCenters.includes(costCenterCode)) {
+      setSelectedCostCenters([...selectedCostCenters, costCenterCode]);
+    }
+  };
+
+  const handleRemoveCostCenter = (costCenterCode: string) => {
+    setSelectedCostCenters(selectedCostCenters.filter((code) => code !== costCenterCode));
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     setLoadingForm(true);
     e.preventDefault();
     try {
-      await addEmployee(formData);
+      // Se for almoxarife, incluir a obra_id (como number) e centros de custo
+      const dataToSend =
+        formData.tipo_funcionario === "Almoxarife"
+          ? {
+              ...formData,
+              obra_id: Number(selectedWork),
+              centros_custo: selectedCostCenters,
+            }
+          : formData;
+
+      await addEmployee(dataToSend);
       handleSuccessToast("Funcionário cadastrado com sucesso!");
-      setFormData({
-        nome: "",
-        matricula: "",
-        cpf: "",
-        tipo_funcionario: "",
-      });
+      setFormData({ nome: "", cpf: "", tipo_funcionario: "" });
+      setSelectedWork(""); // Resetar a obra selecionada
+      setSelectedCostCenters([]); // Resetar centros de custo selecionados
     } catch (error: any) {
-      if (error.response?.status === 400) {
-        handleFailToast("Funcionário já cadastrado com esse CPF.");
-        return;
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const detail =
+          (error.response?.data as any)?.detail ??
+          (error.response?.data as any)?.message ??
+          "Erro ao cadastrar funcionário.";
+
+        handleFailToast(detail);
+        console.error("Falha upload-funcionario:", status, error.response?.data);
+      } else {
+        handleFailToast("Erro inesperado.");
       }
-      handleFailToast("Erro ao cadastrar funcionário.");
     } finally {
       setLoadingForm(false);
     }
@@ -65,46 +167,39 @@ const AddEmployeePage = () => {
     formData.append("file", file);
     try {
       const response = await addEmployeesFile(formData);
-      
+
       // Extrair dados da resposta
       const { sucessos, erros, cpf_duplicados, cpf_invalidos } = response;
-      
+
       // Calcular estatísticas
       const cadastrados = sucessos;
       const jaCadastrados = cpf_duplicados;
       const cpfInvalidos = cpf_invalidos;
       const outrosErros = erros;
-      
+
       // Mensagem personalizada
       let message = `Processamento concluído!\n`;
       message += `✅ ${cadastrados} funcionários cadastrados\n`;
       message += `⚠️ ${jaCadastrados} já estavam cadastrados\n`;
       message += `❌ ${cpfInvalidos} CPFs inválidos\n`;
       message += `❗ ${outrosErros} linhas com outros erros`;
-      
+
       // Toast personalizado
       toast({
         variant: "success",
         title: "Upload de Funcionários",
-        description: (
-          <div className="whitespace-pre-line">
-            {message}
-          </div>
-        ),
-        duration: 10000, // 10 segundos
+        description: <div className="whitespace-pre-line">{message}</div>,
+        duration: 10000,
       });
-      
+
       setFile(null);
     } catch (error: any) {
-      if (error.response?.status === 400) {
-        // Tratar diferentes tipos de erro 400
-        if (error.response.data?.detail) {
-          handleWarningToast(error.response.data.detail);
-        } else if (error.response.data?.message) {
-          handleWarningToast(error.response.data.message);
-        } else {
-          handleWarningToast("Erro no formato do arquivo");
-        }
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
+        const detail =
+          (error.response?.data as any)?.detail ??
+          (error.response?.data as any)?.message ??
+          "Erro no formato do arquivo";
+        handleWarningToast(detail);
         return;
       }
       handleFailToast("Erro ao enviar arquivo de funcionários.");
@@ -127,104 +222,60 @@ const AddEmployeePage = () => {
     }
   };
 
-  const handleSuccessToast = (message: string) => {
-    toast({
-      variant: "success",
-      title: "Sucesso",
-      description: message,
-    });
-  };
-
-  const handleWarningToast = (message: string) => {
-    toast({
-      variant: "warning",
-      title: "Aviso",
-      description: message,
-    });
-  };
-
-  const handleFailToast = (message: string) => {
-    toast({
-      variant: "destructive",
-      title: "Erro",
-      description: message,
-    });
-  };
-
   // Função para gerar e baixar o template Excel
   const downloadTemplate = () => {
     try {
-      // 1. Cria os dados do template com CPFs como strings formatadas
       const data = [
-        ["COLABORADOR", "CPF", "EMPRESA"], // Cabeçalhos
-        ["Fulano de Tal", "'06040005010", "Empresa A"], // Exemplo de linha 1
-        ["Beltrana da Silva", "'11111111111", "Empresa B"]  // Exemplo de linha 2
+        ["COLABORADOR", "CPF", "EMPRESA"],
+        ["Fulano de Tal", "'06040005010", "Empresa A"],
+        ["Beltrana da Silva", "'11111111111", "Empresa B"],
       ];
-      
-      // 2. Cria uma planilha com os dados
+
       const worksheet = utils.aoa_to_sheet(data);
-      
-      // 3. Aplica estilos básicos aos cabeçalhos
+
       const headerStyle = {
         font: { bold: true, color: { rgb: "FFFFFF" } },
-        fill: { fgColor: { rgb: "4472C4" } } // Cor azul
-      };
-      
-      // 4. Configura todas as células da coluna B como texto
-      const range = utils.decode_range(worksheet['!ref'] || "A1:C3");
+        fill: { fgColor: { rgb: "4472C4" } },
+      } as any;
+
+      const range = utils.decode_range(worksheet["!ref"] || "A1:C3");
       for (let row = range.s.r; row <= range.e.r; row++) {
         for (let col = range.s.c; col <= range.e.c; col++) {
           const cellAddress = utils.encode_cell({ r: row, c: col });
           if (!worksheet[cellAddress]) continue;
-          
-          // Se for a coluna CPF (coluna 1), força tipo texto
           if (col === 1) {
-            worksheet[cellAddress].t = 's'; // 's' para string
+            (worksheet[cellAddress] as any).t = "s";
           }
         }
       }
-      
-      // 5. Percorre as colunas para aplicar o estilo aos cabeçalhos
-      const columns = ["A", "B", "C"];
-      columns.forEach((col) => {
+
+      ["A", "B", "C"].forEach((col) => {
         const cellRef = `${col}1`;
         if (!worksheet[cellRef]) return;
-        worksheet[cellRef].s = headerStyle;
+        (worksheet[cellRef] as any).s = headerStyle;
       });
-      
-      // 6. Ajusta a largura das colunas
-      worksheet["!cols"] = [
-        { wch: 30 }, // Largura para COLABORADOR
-        { wch: 20 }, // Largura para CPF
-        { wch: 20 }  // Largura para EMPRESA
-      ];
-      
-      // 7. Cria um workbook e adiciona a planilha
+
+      (worksheet as any)["!cols"] = [{ wch: 30 }, { wch: 20 }, { wch: 20 }];
+
       const workbook = utils.book_new();
       utils.book_append_sheet(workbook, worksheet, "Funcionários");
-      
-      // 8. Gera o arquivo Excel em formato binário
+
       const excelBuffer = write(workbook, { bookType: "xlsx", type: "array" });
-      
-      // 9. Cria um blob a partir do buffer
-      const blob = new Blob([excelBuffer], { 
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+      const blob = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
-      
-      // 10. Cria um link para download
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = "template_funcionarios.xlsx";
       document.body.appendChild(link);
       link.click();
-      
-      // 11. Limpeza: remove o link após o download
+
       setTimeout(() => {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       }, 100);
-      
     } catch (error) {
       console.error("Erro ao gerar o template:", error);
       handleFailToast("Erro ao gerar o template. Tente novamente.");
@@ -234,12 +285,12 @@ const AddEmployeePage = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-100 px-4">
       <Header />
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-md p-6 bg-white rounded-2xl shadow-md">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4 self-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4 text-center">
             Cadastrar Funcionário
           </h1>
-          
+
           <Accordion type="multiple" className="w-full">
             <AccordionItem value="item-1">
               <AccordionTrigger>Adicionar Funcionário Individual</AccordionTrigger>
@@ -260,20 +311,7 @@ const AddEmployeePage = () => {
                       required
                     />
                   </div>
-                  <div>
-                    <label htmlFor="matricula" className="block text-sm font-medium text-gray-700">
-                      Matrícula (Opcional)
-                    </label>
-                    <input
-                      type="text"
-                      id="matricula"
-                      name="matricula"
-                      value={formData.matricula}
-                      onChange={handleChange}
-                      className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Informe a matrícula"
-                    />
-                  </div>
+
                   <div>
                     <label htmlFor="cpf" className="block text-sm font-medium text-gray-700">
                       CPF
@@ -290,24 +328,133 @@ const AddEmployeePage = () => {
                     />
                     {cpfError && <p className="text-red-500 text-sm mt-1">{cpfError}</p>}
                   </div>
+
                   <div>
                     <label htmlFor="tipo_funcionario" className="block text-sm font-medium text-gray-700">
                       Tipo de Funcionário
                     </label>
-                    <DropdownMenuRadioEmployeeType 
-                      position={formData.tipo_funcionario} 
-                      setPosition={(value: string) => setFormData({ ...formData, tipo_funcionario: value })} 
+                    <DropdownMenuRadioEmployeeType
+                      position={formData.tipo_funcionario}
+                      setPosition={(value: string) => setFormData({ ...formData, tipo_funcionario: value })}
                     />
                   </div>
+
+                  {formData.tipo_funcionario === "Almoxarife" && (
+                    <>
+                      <div>
+                        <label htmlFor="obra_id" className="block text-sm font-medium text-gray-700">
+                          Obra do Almoxarife
+                        </label>
+                        {loadingWorks ? (
+                          <div className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl bg-gray-100">
+                            <p className="text-gray-500 text-center">Carregando obras...</p>
+                          </div>
+                        ) : (
+                          <select
+                            id="obra_id"
+                            name="obra_id"
+                            value={selectedWork}
+                            onChange={(e) => {
+                              setSelectedWork(e.target.value);
+                              setSelectedCostCenters([]);
+                            }}
+                            className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            required
+                          >
+                            <option value="">Selecione uma obra</option>
+                            {works.map((work) => (
+                              <option key={work.id} value={work.id}>
+                                {work.initials} - {work.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      {selectedWork && (
+                        <div className="space-y-3">
+                          <label className="block text-sm font-medium text-gray-700">
+                            Centros de Custo
+                          </label>
+
+                          {loadingCostCenters ? (
+                            <div className="p-2 border border-gray-300 rounded-2xl bg-gray-100">
+                              <p className="text-gray-500 text-center">Carregando centros de custo...</p>
+                            </div>
+                          ) : (
+                            <>
+                              {availableCostCenters.length > 0 ? (
+                                <select
+                                  className="w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      handleAddCostCenter(e.target.value);
+                                      e.target.value = "";
+                                    }
+                                  }}
+                                >
+                                  <option value="">Selecione um centro de custo</option>
+                                  {availableCostCenters.map((center) => (
+                                    <option key={center.Centro_Negocio_Cod} value={center.Centro_Negocio_Cod}>
+                                      {center.Centro_Nome}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <p className="text-sm text-gray-500">
+                                  {costCenters.length > 0
+                                    ? "Todos os centros de custo já foram selecionados"
+                                    : "Nenhum centro de custo disponível para esta obra"}
+                                </p>
+                              )}
+
+                              {selectedCostCenters.length > 0 && (
+                                <div className="space-y-2">
+                                  <p className="text-sm font-medium">Centros de custo selecionados:</p>
+                                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                                    {selectedCostCenters.map((code) => {
+                                      const center = costCenters.find((c) => c.Centro_Negocio_Cod === code);
+                                      return (
+                                        <div key={code} className="flex items-center justify-between p-2 bg-gray-100 rounded-lg">
+                                          <span>{center?.Centro_Nome || code}</span>
+                                          <Button
+                                            type="button"
+                                            onClick={() => handleRemoveCostCenter(code)}
+                                            className="p-1 text-red-500 hover:text-red-700"
+                                            variant="ghost"
+                                            size="sm"
+                                          >
+                                            <X size={16} />
+                                          </Button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+
                   <button
                     type="submit"
                     className={`w-full py-2 px-4 text-white font-medium rounded-2xl shadow-sm focus:outline-none flex items-center justify-center ${
-                      formData.nome && formData.cpf && formData.tipo_funcionario
+                      formData.nome &&
+                      formData.cpf &&
+                      formData.tipo_funcionario &&
+                      (formData.tipo_funcionario !== "Almoxarife" || (selectedWork && selectedCostCenters.length > 0))
                         ? "bg-blue-500 hover:bg-blue-600"
                         : "bg-gray-400 cursor-not-allowed"
                     }`}
                     disabled={
-                      !formData.nome || !formData.cpf || !formData.tipo_funcionario || loadingForm
+                      !formData.nome ||
+                      !formData.cpf ||
+                      !formData.tipo_funcionario ||
+                      (formData.tipo_funcionario === "Almoxarife" && (!selectedWork || selectedCostCenters.length === 0)) ||
+                      loadingForm
                     }
                     id="cadastrar-funcionario"
                   >
@@ -321,18 +468,14 @@ const AddEmployeePage = () => {
               <AccordionTrigger>Adicionar Funcionários via Excel</AccordionTrigger>
               <AccordionContent>
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-700 mb-4">
-                    Adicionar Funcionários via Excel
-                  </h2>
+                  <h2 className="text-xl font-semibold text-gray-700 mb-4">Adicionar Funcionários via Excel</h2>
                   <div className="space-y-4">
                     <div>
                       <p className="text-xs text-gray-500 mb-4">
-                        A planilha deve conter as colunas: 
-                        <strong> COLABORADOR</strong>, 
-                        <strong> CPF</strong> e 
-                        <strong> EMPRESA</strong>.
+                        A planilha deve conter as colunas:
+                        <strong> COLABORADOR</strong>, <strong> CPF</strong> e <strong> EMPRESA</strong>.
                       </p>
-                      
+
                       <div className="flex gap-2 mb-4">
                         <button
                           type="button"
@@ -342,7 +485,7 @@ const AddEmployeePage = () => {
                           Baixar Template
                         </button>
                       </div>
-                      
+
                       <input
                         type="file"
                         accept=".xlsx, .xls"
@@ -353,17 +496,11 @@ const AddEmployeePage = () => {
                     <button
                       onClick={handleFileSubmit}
                       className={`w-full py-2 px-4 text-white font-medium rounded-2xl shadow-sm focus:outline-none flex items-center justify-center ${
-                        file
-                          ? "bg-green-500 hover:bg-green-600"
-                          : "bg-gray-400 cursor-not-allowed"
+                        file ? "bg-green-500 hover:bg-green-600" : "bg-gray-400 cursor-not-allowed"
                       }`}
                       disabled={!file || loadingFile}
                     >
-                      {loadingFile ? (
-                        <LoadingSpinner message="Enviando..." />
-                      ) : (
-                        "Enviar Arquivo"
-                      )}
+                      {loadingFile ? <LoadingSpinner message="Enviando..." /> : "Enviar Arquivo"}
                     </button>
                   </div>
                 </div>

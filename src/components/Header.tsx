@@ -1,17 +1,41 @@
 import { useEffect, useState } from "react";
 import { Home, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getNameFromToken } from "@/utils/tokenUtils";
+import { getNameFromToken, getTypeFromToken } from "@/utils/tokenUtils";
 
 const Header = (header: { title?: string }) => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState<string | null>(null);
+  const [userType, setUserType] = useState<string | null>(null);
   const [greeting, setGreeting] = useState<string>("");
 
   useEffect(() => {
-    const name = getNameFromToken();
-    setUserName(name);
+    const loadUserData = () => {
+      const name = getNameFromToken();
+      const type = getTypeFromToken();
+      setUserName(name);
+      setUserType(type);
+    };
 
+    // Carrega os dados inicialmente
+    loadUserData();
+
+    // Adiciona listener para mudanças no storage (entre abas)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token' || e.key === 'accessToken') {
+        loadUserData();
+      }
+    };
+
+    // Listener customizado para mudanças na mesma aba
+    const handleTokenChange = () => {
+      loadUserData();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('tokenChanged', handleTokenChange);
+
+    // Saudação baseada no horário
     const currentHour = new Date().getHours();
     if (currentHour < 12) {
       setGreeting("Bom dia");
@@ -20,11 +44,19 @@ const Header = (header: { title?: string }) => {
     } else {
       setGreeting("Boa noite");
     }
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('tokenChanged', handleTokenChange);
+    };
   }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    // Dispara evento para atualizar outros componentes
+    window.dispatchEvent(new Event('tokenChanged'));
     navigate("/login");
   };
 
@@ -40,15 +72,28 @@ const Header = (header: { title?: string }) => {
         </span>
       </button>
       <h1 className="text-2xl font-bold text-gray-800 text-center flex-1">{header.title}</h1>
-      <div className="flex flex-col items-end">
-        {userName && (
-          <span className="text-sm text-gray-600">
-            {greeting}, <strong>{userName.split(" ")[0]}</strong>
-          </span>
+      <div className="flex items-center gap-4">
+        {userName ? (
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-sm text-gray-600">
+                {greeting}, <strong>{userName.split(" ")[0]}</strong>
+              </div>
+              {userType && (
+                <div className="text-xs text-blue-600 font-medium">
+                  {userType === "Administrador" ? "Administrador" : 
+                   userType === "Almoxarife" ? "Almoxarife" : "Usuário"}
+                </div>
+              )}
+            </div>
+            <div className="h-8 w-px bg-gray-300"></div>
+          </div>
+        ) : (
+          <div className="text-sm text-gray-500">Carregando...</div>
         )}
         <button
           onClick={handleLogout}
-          className="mt-1 flex items-center gap-2 text-red-600 px-3 py-1.5 border border-red-600 rounded-lg hover:bg-red-600 hover:text-white transition"
+          className="flex items-center gap-2 text-red-600 px-3 py-1.5 border border-red-600 rounded-lg hover:bg-red-600 hover:text-white transition"
         >
           Sair
           <LogOut size={18} />
