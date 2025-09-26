@@ -38,7 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MoreHorizontal, Trash2 } from "lucide-react";
-import { getWaitingList, removeProductFromWaitingList, getAllCostCenter, getAllWorks } from "@/api/endpoints";
+import { getWaitingList, removeProductFromWaitingList, getAllWorks } from "@/api/endpoints";
 import LoadingSpinner from "../LoadingSpinner";
 import { SelectedProducts, SelectedProduct } from "./SelectedProducts";
 import Header from "../Header";
@@ -104,7 +104,7 @@ const ActionCell: React.FC<ActionCellProps> = ({ row, setData, setRowSelection }
 
   const handleDelete = async () => {
     const produto = row.original;
-    
+
     try {
       setIsDeleting(true);
       await removeProductFromWaitingList(
@@ -112,9 +112,9 @@ const ActionCell: React.FC<ActionCellProps> = ({ row, setData, setRowSelection }
         produto.Insumo_Cod,
         produto.SubInsumo_Cod,
       );
-      
+
       setData(prevData => prevData.filter(item => item.id !== produto.id));
-      
+
       setRowSelection(prev => {
         const updated = { ...prev };
         delete updated[produto.id.toString()];
@@ -171,7 +171,7 @@ const ActionCell: React.FC<ActionCellProps> = ({ row, setData, setRowSelection }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel 
+            <AlertDialogCancel
               onClick={() => {
                 setIsDialogOpen(false);
                 setIsDropdownOpen(false);
@@ -206,7 +206,13 @@ export function WaitListPage() {
   const [filterNomeProduto, setFilterNomeProduto] = useState("");
   const [filterDestino, setFilterDestino] = useState("");
   const [filterCodigoPedido, setFilterCodigoPedido] = useState("");
-  const [filterCentroCustoObra, setFilterCentroCustoObra] = useState<string>("");
+  const [filterObraId, setFilterObraId] = useState<number | null>(null);
+
+  // NOVO: filtro de centro de custo (para Almoxarife)
+  const [filterCentroCusto, setFilterCentroCusto] = useState<string>("");
+
+  // Opções de Centro de Custo (derivadas dos dados carregados)
+  const [ccOptions, setCcOptions] = useState<Array<{ cod: string; nome: string }>>([]);
 
   // Tabela
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -217,39 +223,14 @@ export function WaitListPage() {
 
   // Usuário
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [centrosCustoObra, setCentrosCustoObra] = useState<Produto["centro_custo"][]>([]);
   const [obras, setObras] = useState<Obra[]>([]);
-  const [loadingCentrosCusto, setLoadingCentrosCusto] = useState(false);
   const [loadingObras, setLoadingObras] = useState(false);
-  const [centrosCustoPorObra, setCentrosCustoPorObra] = useState<{[obraId: number]: Produto["centro_custo"][]}>({});
-  const [loadingCentrosCustoPorObra, setLoadingCentrosCustoPorObra] = useState<{[obraId: number]: boolean}>({});
 
   const { toast } = useToast();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Determinar tipo de usuário e label do filtro - CORRIGIDO
-  const isAlmoxarife = userInfo?.tipo === "Almoxarife";
   const isAdministrador = userInfo?.tipo === "Administrador";
-  const filterLabel = isAdministrador ? "Obra" : isAlmoxarife ? "Centro de Custo" : "";
-
-  // Memoizar fetchCentrosCustoObra - PARA ALMOXARIFE
-  const fetchCentrosCustoObra = useCallback(async (obraId: number) => {
-    setLoadingCentrosCusto(true);
-    try {
-      const response = await getAllCostCenter(obraId);
-      setCentrosCustoObra(response);
-      console.log('Centros de custo carregados para almoxarife:', response);
-    } catch (error) {
-      console.error("Erro ao buscar centros de custo da obra:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Falha ao carregar centros de custo da obra",
-      });
-    } finally {
-      setLoadingCentrosCusto(false);
-    }
-  }, [toast]);
+  const isAlmoxarife = userInfo?.tipo === "Almoxarife";
 
   // Buscar obras para ADMINISTRADOR
   const fetchObras = useCallback(async () => {
@@ -257,7 +238,6 @@ export function WaitListPage() {
     try {
       const response = await getAllWorks();
       setObras(response);
-      console.log('Obras carregadas para administrador:', response);
     } catch (error) {
       console.error("Erro ao buscar obras:", error);
       toast({
@@ -270,53 +250,27 @@ export function WaitListPage() {
     }
   }, [toast]);
 
-  // Função para buscar centros de custo por obra
-  const fetchCentrosCustoPorObra = useCallback(async (obraId: number) => {
-    if (centrosCustoPorObra[obraId]) {
-      return centrosCustoPorObra[obraId]; // Já tem em cache
-    }
-    
-    setLoadingCentrosCustoPorObra(prev => ({ ...prev, [obraId]: true }));
-    
-    try {
-      const response = await getAllCostCenter(obraId);
-      setCentrosCustoPorObra(prev => ({
-        ...prev,
-        [obraId]: response
-      }));
-      return response;
-    } catch (error) {
-      console.error("Erro ao buscar centros de custo da obra:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Falha ao carregar centros de custo da obra",
-      });
-      return [];
-    } finally {
-      setLoadingCentrosCustoPorObra(prev => ({ ...prev, [obraId]: false }));
-    }
-  }, [centrosCustoPorObra, toast]);
-
-  // Memoizar fetchData com dependências fixas
+  // Fetch principal (envia work_id quando Admin selecionar obra; envia centro_custo quando almoxarife selecionar)
   const fetchData = useCallback(async (
     newSkip: number,
     append: boolean,
     codigoPedido?: string,
     buscaDestino?: string,
     buscaNomeProduto?: string,
-    centroCustoObra?: string
+    obraId?: number | null,
+    centroCusto?: string
   ) => {
     if (!append) {
       setIsLoading(true);
       setHasMore(true);
     }
-    
+
     try {
       const actualCodigoPedido = codigoPedido ?? filterCodigoPedido;
       const actualBuscaDestino = buscaDestino ?? filterDestino;
       const actualBuscaNomeProduto = buscaNomeProduto ?? filterNomeProduto;
-      const actualCentroCustoObra = centroCustoObra ?? filterCentroCustoObra;
+      const actualObraId = obraId ?? filterObraId;
+      const actualCentroCusto = centroCusto ?? filterCentroCusto;
 
       const response = await getWaitingList({
         skip: newSkip,
@@ -324,7 +278,9 @@ export function WaitListPage() {
         codigo_pedido: actualCodigoPedido || undefined,
         destino: actualBuscaDestino || undefined,
         SubInsumo_Especificacao: actualBuscaNomeProduto || undefined,
-        centro_custo: actualCentroCustoObra || undefined,
+        work_id: isAdministrador ? actualObraId ?? undefined : undefined,
+        // O backend aceita nome OU código para 'centro_custo' (ilike em nome/código)
+        centro_custo: actualCentroCusto || undefined,
       });
 
       if (append) {
@@ -345,9 +301,9 @@ export function WaitListPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [limit, toast, filterCodigoPedido, filterDestino, filterNomeProduto, filterCentroCustoObra]);
+  }, [limit, toast, filterCodigoPedido, filterDestino, filterNomeProduto, filterObraId, filterCentroCusto, isAdministrador]);
 
-  // Colunas memoizadas - CRÍTICO para evitar loops
+  // Colunas memoizadas
   const tableColumns = useMemo((): ColumnDef<Produto>[] => [
     {
       id: "select",
@@ -439,39 +395,7 @@ export function WaitListPage() {
     }
   ], [setData, setRowSelection]);
 
-  // Dados filtrados - CORRIGIDO
-  const filteredData = useMemo(() => {
-    // Para administrador: filtrar por obra selecionada
-    if (isAdministrador && filterCentroCustoObra) {
-      const obraSelecionada = obras.find(obra => obra.name === filterCentroCustoObra);
-      if (obraSelecionada) {
-        // Buscar centros de custo desta obra de forma síncrona (já deve estar pré-carregada)
-        const centrosDaObra = centrosCustoPorObra[obraSelecionada.id] || [];
-        
-        // Filtrar produtos que pertencem a centros de custo desta obra
-        return data.filter((produto: Produto) => {
-          return centrosDaObra.some(centro => 
-            centro.Centro_Negocio_Cod === produto.centro_custo.Centro_Negocio_Cod
-          );
-        });
-      }
-      return data;
-    }
-    
-    // Para almoxarife: filtrar por centro de custo selecionado
-    if (isAlmoxarife && filterCentroCustoObra) {
-      return data.filter((produto: Produto) => 
-        produto.centro_custo.Centro_Nome === filterCentroCustoObra
-      );
-    }
-    
-    return data;
-  }, [data, obras, centrosCustoPorObra, isAdministrador, isAlmoxarife, filterCentroCustoObra]);
-
-  // Dados finais para a tabela
-  const tableData = useMemo(() => {
-    return filteredData;
-  }, [filteredData]);
+  const tableData = useMemo(() => data, [data]);
 
   // Tabela com dados memoizados
   const table = useReactTable({
@@ -496,72 +420,63 @@ export function WaitListPage() {
   useEffect(() => {
     const user = getUserInfoFromToken();
     setUserInfo(user);
-    console.log('User info carregado:', user);
   }, []);
 
-  // Pré-carregar centros de custo para todas as obras (para administrador)
+  // Carregar obras (apenas admin)
   useEffect(() => {
-    if (isAdministrador && obras.length > 0) {
-      const loadCentrosCustoParaTodasObras = async () => {
-        for (const obra of obras) {
-          // Só carrega se ainda não tiver carregado
-          if (!centrosCustoPorObra[obra.id] && !loadingCentrosCustoPorObra[obra.id]) {
-            try {
-              await fetchCentrosCustoPorObra(obra.id);
-            } catch (error) {
-              console.error(`Erro ao carregar centros de custo da obra ${obra.name}:`, error);
-            }
-          }
-        }
-      };
-      
-      loadCentrosCustoParaTodasObras();
+    if (userInfo?.tipo === "Administrador") {
+      fetchObras();
     }
-  }, [obras, isAdministrador, centrosCustoPorObra, loadingCentrosCustoPorObra, fetchCentrosCustoPorObra]);
+  }, [userInfo, fetchObras]);
 
-  // Carregar dados baseado no tipo de usuário - CORRIGIDO
+  // Primeira carga de dados
   useEffect(() => {
-    if (userInfo) {
-      console.log('Tipo de usuário detectado:', userInfo.tipo);
-      
-      if (userInfo.tipo === "Administrador") {
-        console.log('Carregando obras para administrador');
-        fetchObras();
-      } else if (userInfo.tipo === "Almoxarife" && userInfo.obra_id) {
-        console.log('Carregando centros de custo para almoxarife');
-        fetchCentrosCustoObra(userInfo.obra_id);
-      } else {
-        console.log('Carregando dados para usuário comum');
-        fetchData(0, false);
-      }
-    }
-  }, [userInfo, fetchObras, fetchCentrosCustoObra, fetchData]);
+    if (!userInfo) return;
+    fetchData(0, false);
+  }, [userInfo, fetchData]);
 
-  // Carregar dados quando obras mudarem (para administrador) - CORRIGIDO
+  // ---------- AUTO-APLICAÇÃO DOS FILTROS ----------
+  // Código do Pedido: aplicar imediatamente (mín. 1 char) e também ao limpar (0 char)
   useEffect(() => {
-    if (userInfo?.tipo === "Administrador" && obras.length > 0) {
-      console.log('Obras carregadas, buscando dados da lista de espera para administrador');
-      fetchData(0, false);
-    }
-  }, [obras, userInfo, fetchData]);
-
-  // Carregar dados quando centros de custo mudarem (para almoxarife) - CORRIGIDO
-  useEffect(() => {
-    if (userInfo?.tipo === "Almoxarife" && centrosCustoObra.length > 0) {
-      console.log('Centros de custo carregados, buscando dados da lista de espera para almoxarife');
-      fetchData(0, false);
-    }
-  }, [centrosCustoObra, userInfo, fetchData]);
-
-  // Recarregar dados quando filtros mudarem
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
+    const v = filterCodigoPedido.trim();
+    if (v.length >= 1 || v.length === 0) {
       skipRef.current = 0;
       fetchData(0, false);
-    }, 300); // Debounce de 300ms
+    }
+  }, [filterCodigoPedido, fetchData]);
 
-    return () => clearTimeout(timeoutId);
-  }, [filterCodigoPedido, filterDestino, filterNomeProduto, filterCentroCustoObra, fetchData]);
+  // Especificação e Destino: debounce 400ms, mínimo 2 chars (ou 0 para limpar)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const nome = filterNomeProduto.trim();
+      const dest = filterDestino.trim();
+
+      const okNome = nome.length === 0 || nome.length >= 2;
+      const okDest = dest.length === 0 || dest.length >= 2;
+
+      if (okNome && okDest) {
+        skipRef.current = 0;
+        fetchData(0, false);
+      }
+    }, 400);
+
+    return () => clearTimeout(handler);
+  }, [filterNomeProduto, filterDestino, fetchData]);
+
+  // Obra (Admin): aplicar imediatamente ao trocar
+  useEffect(() => {
+    if (!isAdministrador) return;
+    skipRef.current = 0;
+    fetchData(0, false);
+  }, [filterObraId, isAdministrador, fetchData]);
+
+  // NOVO: ao mudar filterCentroCusto (Almoxarife), aplica imediatamente (server-side via centro_custo)
+  useEffect(() => {
+    if (!isAlmoxarife) return;
+    // aplica sempre (quando define valor ou quando limpa)
+    skipRef.current = 0;
+    fetchData(0, false);
+  }, [filterCentroCusto, isAlmoxarife, fetchData]);
 
   // Scroll infinito
   useEffect(() => {
@@ -580,7 +495,7 @@ export function WaitListPage() {
         isFetching = true;
         const newSkip = skipRef.current + limit;
         skipRef.current = newSkip;
-        
+
         fetchData(newSkip, true).finally(() => {
           isFetching = false;
         });
@@ -594,11 +509,34 @@ export function WaitListPage() {
   // Atualizar produtos selecionados
   useEffect(() => {
     const selectedRows = table.getSelectedRowModel().rows;
-    const products: SelectedProduct[] = selectedRows.map(row => 
+    const products: SelectedProduct[] = selectedRows.map(row =>
       mapProdutoToSelectedProduct(row.original)
     );
     setSelectedProducts(products);
   }, [rowSelection, table]);
+
+  // Derivar opções de Centro de Custo (apenas para Almoxarife) a partir dos dados carregados
+  useEffect(() => {
+    if (!isAlmoxarife) {
+      setCcOptions([]);
+      return;
+    }
+    const map = new Map<string, string>();
+    data.forEach((item) => {
+      const cod = item.centro_custo?.Centro_Negocio_Cod;
+      const nome = item.centro_custo?.Centro_Nome;
+      if (cod && nome && !map.has(cod)) {
+        map.set(cod, nome);
+      }
+    });
+    const list = Array.from(map.entries()).map(([cod, nome]) => ({ cod, nome }));
+    // Ordena alfabeticamente pelo nome para UX
+    list.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    setCcOptions(list);
+
+    // Se o filtro atual apontar para um CC que não veio nessa página (paginado), mantemos o valor;
+    // a busca server-side por 'centro_custo' garante consistência.
+  }, [data, isAlmoxarife]);
 
   const handleSendProductsSuccess = useCallback(() => {
     setRowSelection({});
@@ -609,159 +547,125 @@ export function WaitListPage() {
     setFilterCodigoPedido("");
     setFilterNomeProduto("");
     setFilterDestino("");
-    setFilterCentroCustoObra("");
-  }, []);
-
-  const handleSearch = useCallback(() => {
+    setFilterObraId(null);
+    setFilterCentroCusto("");
     skipRef.current = 0;
     fetchData(0, false);
   }, [fetchData]);
 
-  // Renderizar select dinâmico baseado no tipo de usuário - CORRIGIDO
-  const renderDynamicFilter = () => {
-    if (!isAlmoxarife && !isAdministrador) return null;
-
-    const obraSelecionada = obras.find(obra => obra.name === filterCentroCustoObra);
-    const isLoadingCentros = obraSelecionada && loadingCentrosCustoPorObra[obraSelecionada.id];
-
-    return (
-      <div className="flex flex-col w-full sm:w-1/4">
-        <label className="text-sm font-medium text-gray-700 mb-1">{filterLabel}</label>
-        <div className="flex gap-2">
-          <select 
-            value={filterCentroCustoObra} 
-            onChange={(e) => setFilterCentroCustoObra(e.target.value)}
-            className="flex h-10 w-full items-center justify-between border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 rounded-2xl"
+  // ---- UI: filtros ocupando largura total com flex responsivo ----
+  const renderFilters = () => (
+    <div className="flex flex-wrap items-end gap-3 py-4 w-full">
+      {/* Obra (Admin) */}
+      {isAdministrador && (
+        <div className="flex flex-col flex-1 min-w-[180px]">
+          <label className="text-sm font-medium text-gray-700 mb-1">Obra</label>
+          <select
+            value={filterObraId ?? ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFilterObraId(val ? Number(val) : null);
+            }}
+            className="h-10 w-full border border-input bg-background px-3 py-2 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            <option value="">Selecione {filterLabel.toLowerCase()}</option>
-            
-            {isAdministrador ? (
-              <>
-                {loadingObras ? (
-                  <option value="" disabled>Carregando obras...</option>
-                ) : obras.length > 0 ? (
-                  obras.map((obra) => (
-                    <option key={obra.id} value={obra.name}>
-                      {obra.name}
-                    </option>
-                  ))
-                ) : (
-                  <option value="" disabled>Nenhuma obra disponível</option>
-                )}
-              </>
-            ) : isAlmoxarife ? (
-              <>
-                {loadingCentrosCusto ? (
-                  <option value="" disabled>Carregando centros de custo...</option>
-                ) : centrosCustoObra.length > 0 ? (
-                  centrosCustoObra.map((centro) => (
-                    <option key={centro.Centro_Negocio_Cod} value={centro.Centro_Nome}>
-                      {centro.Centro_Nome}
-                    </option>
-                  ))
-                ) : (
-                  <option value="" disabled>Nenhum centro de custo disponível</option>
-                )}
-              </>
-            ) : null}
+            <option value="">Todas as obras</option>
+            {loadingObras ? (
+              <option value="" disabled>Carregando...</option>
+            ) : obras.length > 0 ? (
+              obras.map((obra) => (
+                <option key={obra.id} value={obra.id}>
+                  {obra.name}
+                </option>
+              ))
+            ) : (
+              <option value="" disabled>Nenhuma obra</option>
+            )}
           </select>
-          <Button 
-            onClick={handleSearch}
-            disabled={isLoadingCentros}
-            className="rounded-2xl bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
-          >
-            {isLoadingCentros ? "Carregando..." : "Buscar"}
-          </Button>
         </div>
-        {isLoadingCentros && (
-          <div className="text-xs text-blue-600 mt-1">
-            Carregando centros de custo da obra...
-          </div>
-        )}
+      )}
+
+      {/* Centro de Custo (Almoxarife) */}
+      {isAlmoxarife && (
+        <div className="flex flex-col flex-1 min-w-[220px]">
+          <label className="text-sm font-medium text-gray-700 mb-1">Centro de Custo</label>
+          <select
+            value={filterCentroCusto}
+            onChange={(e) => setFilterCentroCusto(e.target.value)}
+            className="h-10 w-full border border-input bg-background px-3 py-2 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="">Todos os CCs permitidos</option>
+            {ccOptions.length > 0 ? (
+              ccOptions.map((cc) => (
+                <option key={cc.cod} value={cc.cod}>
+                  {cc.nome}
+                </option>
+              ))
+            ) : (
+              <option value="" disabled>Nenhum CC disponível</option>
+            )}
+          </select>
+        </div>
+      )}
+
+      {/* Código do Pedido */}
+      <div className="flex flex-col flex-1 min-w-[180px]">
+        <label className="text-sm font-medium text-gray-700 mb-1">Código do Pedido</label>
+        <Input
+          placeholder="Digite o código"
+          value={filterCodigoPedido}
+          onChange={(e) => setFilterCodigoPedido(e.target.value)}
+          className="rounded-2xl w-full h-10"
+        />
       </div>
-    );
-  };
+
+      {/* Especificação */}
+      <div className="flex flex-col flex-1 min-w-[200px]">
+        <div className="flex justify-between items-center mb-1">
+          <label className="text-sm font-medium text-gray-700">Especificação</label>
+          <span className="text-xs text-gray-500">Mín. 2 caracteres</span>
+        </div>
+        <Input
+          placeholder="Digite a especificação"
+          value={filterNomeProduto}
+          onChange={(e) => setFilterNomeProduto(e.target.value)}
+          className="rounded-2xl w-full h-10"
+        />
+      </div>
+
+      {/* Destino */}
+      <div className="flex flex-col flex-1 min-w-[180px]">
+        <div className="flex justify-between items-center mb-1">
+          <label className="text-sm font-medium text-gray-700">Destino</label>
+          <span className="text-xs text-gray-500">Mín. 2 caracteres</span>
+        </div>
+        <Input
+          placeholder="Digite o destino"
+          value={filterDestino}
+          onChange={(e) => setFilterDestino(e.target.value)}
+          className="rounded-2xl w-full h-10"
+        />
+      </div>
+
+      {/* Botão Limpar Filtros */}
+      <div className="flex flex-col flex-shrink-0">
+        <label className="text-sm font-medium text-gray-700 mb-1 invisible">Limpar</label>
+        <Button
+          onClick={handleClearFilters}
+          variant="outline"
+          className="rounded-2xl h-10 min-w-[120px] whitespace-nowrap"
+        >
+          Limpar Filtros
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="w-full px-5">
       <Header title="Autorização de Requisição" />
 
-      {/* Filtros de Busca */}
-      <div className="flex flex-wrap gap-4 py-4">
-        {/* Filtro Dinâmico (Obra para Admin, Centro de Custo para Almoxarife) */}
-        {renderDynamicFilter()}
-
-        {/* Código do Pedido */}
-        <div className="flex flex-col w-full sm:w-1/4">
-          <label className="text-sm font-medium text-gray-700 mb-1">Código do Pedido</label>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Digite o código do pedido"
-              value={filterCodigoPedido}
-              onChange={(e) => setFilterCodigoPedido(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="rounded-2xl w-full"
-            />
-            <Button 
-              onClick={handleSearch}
-              className="rounded-2xl bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
-            >
-              Buscar
-            </Button>
-          </div>
-        </div>
-
-        {/* Especificação do Insumo */}
-        <div className="flex flex-col w-full sm:w-1/4">
-          <label className="text-sm font-medium text-gray-700 mb-1">Especificação do Insumo</label>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Digite a especificação do insumo"
-              value={filterNomeProduto}
-              onChange={(e) => setFilterNomeProduto(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="rounded-2xl w-full"
-            />
-            <Button 
-              onClick={handleSearch}
-              className="rounded-2xl bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
-            >
-              Buscar
-            </Button>
-          </div>
-        </div>
-
-        {/* Destino */}
-        <div className="flex flex-col w-full sm:w-1/4">
-          <label className="text-sm font-medium text-gray-700 mb-1">Destino</label>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Digite o destino"
-              value={filterDestino}
-              onChange={(e) => setFilterDestino(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="rounded-2xl w-full"
-            />
-            <Button 
-              onClick={handleSearch}
-              className="rounded-2xl bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
-            >
-              Buscar
-            </Button>
-          </div>
-        </div>
-
-        {/* Botões de Ação */}
-        <div className="flex items-end gap-2 w-full sm:w-auto mt-6">
-          <Button 
-            onClick={handleClearFilters}
-            variant="outline"
-            className="rounded-2xl"
-          >
-            Limpar Filtros
-          </Button>
-        </div>
-      </div>
+      {/* Filtros (flex full width) */}
+      {renderFilters()}
 
       {/* Tabela */}
       <div
@@ -802,8 +706,8 @@ export function WaitListPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell 
-                  colSpan={tableColumns.length} 
+                <TableCell
+                  colSpan={tableColumns.length}
                   className="h-24 text-center"
                 >
                   {isLoading ? "Carregando..." : "Nenhum resultado encontrado."}
@@ -825,14 +729,14 @@ export function WaitListPage() {
           </div>
         )}
       </div>
-      
+
       {/* Informações de seleção */}
       <div className="flex items-center justify-between py-4">
         <div className="text-sm text-gray-600">
           {table.getFilteredSelectedRowModel().rows.length} de{" "}
           {table.getFilteredRowModel().rows.length} linha(s) selecionada(s)
         </div>
-        
+
         {table.getFilteredSelectedRowModel().rows.length > 0 && (
           <Button
             variant="outline"
@@ -843,13 +747,13 @@ export function WaitListPage() {
           </Button>
         )}
       </div>
-      
+
       {selectedProducts.length === 0 && (
         <div className="my-4 text-center text-gray-500">
           Selecione produtos para dar baixa
         </div>
       )}
-      
+
       {selectedProducts.length > 0 && (
         <SelectedProducts
           selectedProducts={selectedProducts}

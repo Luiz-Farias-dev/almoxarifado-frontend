@@ -100,6 +100,7 @@ interface GetWaitingListParams {
   destino?: string;
   SubInsumo_Especificacao?: string;
   centro_custo?: string;
+  work_id?: number;
 }
 export const getWaitingList = async (params: GetWaitingListParams) => {
   const response = await api.get("/lista-espera/", { params });
