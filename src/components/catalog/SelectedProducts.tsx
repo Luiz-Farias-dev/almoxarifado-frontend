@@ -45,7 +45,6 @@ export const SelectedProducts = ({
 }: SelectedProductsProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [userInfo, setUserInfo] = useState<any>(null);
   const [nome, setNome] = useState<string | undefined>("");
   const [destino, setDestino] = useState("");
   const [centroCustoSelected, setCentroCustoSelected] =
@@ -105,7 +104,6 @@ export const SelectedProducts = ({
 
   useEffect(() => {
     const user = getUserInfoFromToken();
-    setUserInfo(user);
     setNome(user?.nome || undefined);
 
     // Agora os centros de custo são carregados a partir das permissões
