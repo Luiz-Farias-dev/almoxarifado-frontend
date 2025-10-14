@@ -90,9 +90,9 @@ const AddCostCenter = () => {
     setLoadingWork(true);
     e.preventDefault();
     
-    // Validar tamanho da sigla
+    // Validar tamanho do nome
     if (workForm.initials.length < 3 || workForm.initials.length > 10) {
-      handleWarningToast("Sigla deve ter entre 3 e 10 caracteres");
+      handleWarningToast("O nome deve ter entre 3 e 10 caracteres");
       setLoadingWork(false);
       return;
     }
@@ -246,7 +246,7 @@ const AddCostCenter = () => {
                 <form onSubmit={handleWorkSubmit} className="space-y-6">
                   <div>
                     <label htmlFor="initials" className="block text-sm font-medium text-gray-700 mb-1">
-                      Sigla da Obra
+                      Nome da Obra
                     </label>
                     <input
                       type="text"
@@ -259,7 +259,7 @@ const AddCostCenter = () => {
                       required
                     />
                     <p className="mt-2 text-xs text-gray-500">
-                      Utilize uma sigla única com 3 a 10 caracteres
+                      O nome deve ter de 3 a 10 caracteres
                     </p>
                   </div>
                   
@@ -287,7 +287,7 @@ const AddCostCenter = () => {
             <h3 className="text-sm font-semibold text-blue-800 mb-2">Informações importantes</h3>
             <ul className="text-xs text-blue-700 space-y-1">
               <li>• O código do centro de custo deve ser único</li>
-              <li>• A sigla da obra deve ter entre 3 e 10 caracteres</li>
+              <li>• O nome da obra deve ter entre 3 e 10 caracteres</li>
               <li>• Após cadastrar uma obra, ela estará disponível na opção "Selecione uma obra" na aba "Cadastar Centro de Custo"</li>
             </ul>
           </div>
