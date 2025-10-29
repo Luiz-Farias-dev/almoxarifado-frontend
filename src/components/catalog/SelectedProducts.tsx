@@ -78,6 +78,8 @@ export const SelectedProducts = ({
     "Eng. Producao e Enc. Gerais",
     "Almoxarifado",
     "Compras",
+    "Alojamentos",
+    "Topografia",
     "RMT - Mecanica",
     "RMT - Meio Ambiente",
     "RMT - Seguranca e Saude Ocupacional (SSO)",
