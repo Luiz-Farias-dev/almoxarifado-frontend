@@ -125,7 +125,7 @@ export const SelectedProducts = ({
           ? {
               ...product,
               [field]:
-                typeof value === "string" ? parseInt(value, 10) : value,
+                typeof value === "string" ? parseFloat(value.replace(',', '.')) : value,
             }
           : product
       )
@@ -395,7 +395,7 @@ export const SelectedProducts = ({
                     handleInputChange(
                       product.id,
                       "quantidade",
-                      parseInt(e.target.value) || 0
+                      e.target.value|| 0
                     )
                   }
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
