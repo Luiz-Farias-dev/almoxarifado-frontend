@@ -77,9 +77,8 @@ const AddProductPage = () => {
       setFile(null);
     } catch (error: any) {
       if (error.response?.status === 400) {
-        // Capturar todas as mensagens de erro 400 do backend
-        const errorDetail = error.response.data.detail;
-        
+        const raw = error.response.data?.error ?? error.response.data?.detail ?? "Erro no envio.";
+        const errorDetail = typeof raw === "string" ? raw : JSON.stringify(raw);
         if (errorDetail.includes("Colunas obrigatórias faltando")) {
           handleWarningToast(errorDetail);
           return;

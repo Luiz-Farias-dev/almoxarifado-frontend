@@ -5,60 +5,32 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Envia cookies automaticamente
+  withCredentials: true,
 });
 
-// Variáveis de controle
-let isRefreshing = false;
-let failedRequestsQueue: Array<{
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
-}> = [];
+// Request interceptor: add Bearer token except for login/signup
+api.interceptors.request.use(
+  (config) => {
+    const url = config.url ?? "";
+    if (!url.includes("/login") && !url.includes("/signup")) {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-// Interceptor de resposta
+// Response interceptor: on 401 redirect to login (backend has no refresh endpoint)
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
+  (error) => {
     const originalRequest = error.config;
-
-    if (
-      error.response?.status === 401 &&
-      originalRequest.url?.includes("/login")
-    ) {
-      return Promise.reject(error);
+    if (error.response?.status === 401 && !originalRequest.url?.includes("/login")) {
+      window.location.href = "/login";
     }
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedRequestsQueue.push({ resolve, reject });
-        })
-          .then(() => api(originalRequest))
-          .catch((err) => Promise.reject(err));
-      }
-
-      isRefreshing = true;
-
-      try {
-        // Chamada SIMPLES ao refresh endpoint
-        await api.post(`refresh-token/`);
-
-        // Repete a requisição original
-        return api(originalRequest);
-      } catch (refreshError) {
-        // Redireciona para login em caso de erro
-        window.location.href = "/login";
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-        // Processa fila de requisições
-        failedRequestsQueue.forEach((req) => req.resolve());
-        failedRequestsQueue = [];
-      }
-    }
-
     return Promise.reject(error);
   }
 );

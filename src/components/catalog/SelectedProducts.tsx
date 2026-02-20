@@ -232,36 +232,26 @@ export const SelectedProducts = ({
       setDestino("");
       setCentroCustoSelected(undefined);
     } catch (error: any) {
-      // Tratamento melhorado de erros
       let errorDetail = "Erro ao enviar dados. Tente novamente.";
+      const data = error.response?.data;
+      const payload = data?.error ?? data?.detail;
 
-      if (error.response?.data?.detail) {
-        // Se for um array de erros de validacao
-        if (Array.isArray(error.response.data.detail)) {
-          errorDetail = error.response.data.detail
+      if (payload) {
+        if (Array.isArray(payload)) {
+          errorDetail = payload
             .map((err: any) => {
-              // Extrai informacoes especificas do erro de campo obrigatorio
               if (err.type === "value_error.missing") {
-                return `Campo obrigatorio faltando: ${err.loc.join(".")}`;
+                return `Campo obrigatório faltando: ${(err.loc || []).join(".")}`;
               }
               return err.msg || JSON.stringify(err);
             })
             .join(", ");
-        }
-        // Se for um objeto dengan propriedade msg
-        else if (
-          typeof error.response.data.detail === "object" &&
-          error.response.data.detail.msg
-        ) {
-          errorDetail = error.response.data.detail.msg;
-        }
-        // Se for uma string
-        else if (typeof error.response.data.detail === "string") {
-          errorDetail = error.response.data.detail;
-        }
-        // Caso contrario, converter para string
-        else {
-          errorDetail = JSON.stringify(error.response.data.detail);
+        } else if (typeof payload === "object" && payload.msg) {
+          errorDetail = payload.msg;
+        } else if (typeof payload === "string") {
+          errorDetail = payload;
+        } else {
+          errorDetail = JSON.stringify(payload);
         }
       } else if (error.message) {
         errorDetail = error.message;

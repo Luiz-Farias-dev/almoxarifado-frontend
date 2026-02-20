@@ -79,11 +79,11 @@ export const SelectedProducts = ({ selectedProducts, setSelectedProducts, onRemo
       onSendProductsSuccess(selectedProducts.map((product) => product.id));
       setSelectedProducts([]);
     } catch (error: any) {
-      if (error.response.status === 403) {
+      if (error.response?.status === 403) {
         toast({
           variant: "destructive",
           title: "Erro",
-          description: error.response.data.detail,
+          description: error.response?.data?.error ?? error.response?.data?.detail ?? "Acesso negado.",
         });
       } else {
         handleFailToast();

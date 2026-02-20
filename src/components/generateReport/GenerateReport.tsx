@@ -63,8 +63,12 @@ const GenerateReportPage = () => {
       window.URL.revokeObjectURL(url);
       handleSuccessToast();
     } catch (error: any) {
-      if (error.response && error.response.status === 404) {
-        handleWarningToast();
+      if (error.response?.status === 404) {
+        toast({
+          variant: "default",
+          title: "Em breve",
+          description: "A geração de relatórios será disponibilizada quando o backend estiver disponível.",
+        });
         return;
       }
       handleFailToast();

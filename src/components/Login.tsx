@@ -13,29 +13,28 @@ function LoginPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => { 
-    console.log("submit");
+  const handleLogin = async () => {
     setLoading(true);
     try {
       const response = await login(formatCPF(cpf), senha);
-      const { access_token, refresh_token } = response.data;
-      localStorage.setItem("accessToken", access_token);
-      localStorage.setItem("refreshToken", refresh_token);
+      const token = response.data.token;
+      localStorage.setItem("accessToken", token);
+      localStorage.setItem("refreshToken", token);
       navigate("/");
     } catch (error: any) {
       setLoginError(null);
       setLoginSenhaError(null);
+      const msg = error.response?.data?.error ?? error.response?.data?.detail ?? "";
       if (error.response?.status === 403) {
-        setLoginError(error.response?.data?.detail || "Apenas administradores podem acessar o sistema.");
+        setLoginError(msg || "Apenas administradores podem acessar o sistema.");
       } else if (error.response?.status === 401) {
-        setLoginSenhaError(error.response?.data?.detail || "Senha incorreta.");
+        setLoginSenhaError(msg || "Senha incorreta.");
       } else {
-        setLoginError(error.response?.data?.detail || "Erro ao validar CPF.");
+        setLoginError(msg || "Erro ao validar CPF.");
       }
     } finally {
-      setLoading(false)
-      setLoading(false)
-    }  
+      setLoading(false);
+    }
   };
 
   const handleCpfChange = (value: string) => {

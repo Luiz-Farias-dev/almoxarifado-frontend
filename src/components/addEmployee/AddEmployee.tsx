@@ -141,11 +141,15 @@ const AddEmployeePage = () => {
     } catch (error: any) {
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
+        if (status === 404) {
+          handleFailToast("Funcionalidade em breve. Cadastro de funcionários será disponibilizado quando o backend estiver disponível.");
+          return;
+        }
         const detail =
+          (error.response?.data as any)?.error ??
           (error.response?.data as any)?.detail ??
           (error.response?.data as any)?.message ??
           "Erro ao cadastrar funcionário.";
-
         handleFailToast(detail);
         console.error("Falha upload-funcionario:", status, error.response?.data);
       } else {
@@ -194,13 +198,20 @@ const AddEmployeePage = () => {
 
       setFile(null);
     } catch (error: any) {
-      if (axios.isAxiosError(error) && error.response?.status === 400) {
-        const detail =
-          (error.response?.data as any)?.detail ??
-          (error.response?.data as any)?.message ??
-          "Erro no formato do arquivo";
-        handleWarningToast(detail);
-        return;
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          handleFailToast("Funcionalidade em breve. Upload de funcionários será disponibilizado quando o backend estiver disponível.");
+          return;
+        }
+        if (error.response?.status === 400) {
+          const detail =
+            (error.response?.data as any)?.error ??
+            (error.response?.data as any)?.detail ??
+            (error.response?.data as any)?.message ??
+            "Erro no formato do arquivo";
+          handleWarningToast(detail);
+          return;
+        }
       }
       handleFailToast("Erro ao enviar arquivo de funcionários.");
     } finally {
