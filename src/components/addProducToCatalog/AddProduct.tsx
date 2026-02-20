@@ -49,7 +49,7 @@ const AddProductPage = () => {
         Insumo_Cod: "",
         SubInsumo_Cod:"",
         Unid_Cod: "",
-        INSUMO_ITEMOBSOLETO:""
+        INSUMO_ITEMOBSOLETO:"N"
       });
     } catch (error: any) {
       if (error.response && error.response.status === 400) {
@@ -76,8 +76,28 @@ const AddProductPage = () => {
       handleSuccessToast("Arquivo enviado com sucesso!");
       setFile(null);
     } catch (error: any) {
-      if (error.response.status === 400 && error.response.data.detail === "A planilha deve conter as colunas: Código Produto/Material, Nome Produto/Especificação, Unidade e Centro de Custo") {
-        handleWarningToast("A planilha deve conter as colunas: 'Código Produto ou Material', 'Nome Produto ou Especificação', 'Unidade' e 'Centro de Custo'");
+      if (error.response?.status === 400) {
+        const raw = error.response.data?.error ?? error.response.data?.detail ?? "Erro no envio.";
+        const errorDetail = typeof raw === "string" ? raw : JSON.stringify(raw);
+        if (errorDetail.includes("Colunas obrigatórias faltando")) {
+          handleWarningToast(errorDetail);
+          return;
+        }
+        if (errorDetail.includes("Apenas arquivos Excel")) {
+          handleWarningToast(errorDetail);
+          return;
+        }
+        if (errorDetail.includes("O arquivo está vazio")) {
+          handleWarningToast(errorDetail);
+          return;
+        }
+        if (errorDetail.includes("É necessário ter either")) {
+          handleWarningToast("Formato de colunas incorreto. Verifique as instruções acima.");
+          return;
+        }
+        
+        // Mensagem genérica para outros erros 400
+        handleWarningToast(errorDetail || "Erro no formato do arquivo.");
         return;
       }
       handleFailToast("Erro ao enviar arquivo de produtos.");
@@ -173,6 +193,7 @@ const AddProductPage = () => {
                       onChange={handleChange}
                       className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Informe a unidade de medida"
+                      required
                     />
                   </div>
                   <div>
@@ -224,23 +245,35 @@ const AddProductPage = () => {
             </AccordionItem>
 
             <AccordionItem value="item-2">
-              <AccordionTrigger>Adicionar Produtos via Excel</AccordionTrigger>
+              <AccordionTrigger>Adicionar Produtos via Planilha</AccordionTrigger>
               <AccordionContent>
-                {/* Formulário para upload de arquivo Excel */}
+                {/* Formulário para upload de arquivo */}
                 <div>
                   <h2 className="text-xl font-semibold text-gray-700">
-                    Adicionar Produtos via Excel
+                    Adicionar Produtos via Planilha
                   </h2>
                   <div className="space-y-4">
                     <div>
                       <p className="text-xs text-gray-500 mb-4">
-                        A planilha deve conter as colunas
-                        seguindo o formato de nome "Insumo_Cod",
-                        "SubInsumo_Cod", "Unid_Cod", "SubInsumo_Especificacao" e "INSUMO_ITEMOBSOLETO".
+                        A planilha (Excel ou CSV) deve conter:
+                        <br />
+                        <strong>Opção 1 (Recomendado):</strong> 
+                        "Insumo_Codigo" (código completo), "Insumo_Especificacao", "Unid_Cod", "Insumo_ItemObsoleto"
+                        <br />
+                        <strong>Opção 2 (Legado):</strong> 
+                        "Insumo_Cod", "SubInsumo_Cod", "SubInsumo_Especificacao", "Unid_Cod", "INSUMO_ITEMOBSOLETO"
+                        <br />
+                        O sistema fará automaticamente:
+                        <br />
+                        - Separação dos últimos 3 dígitos do Insumo_Codigo como SubInsumo_Cod
+                        <br />
+                        - Conversão de Insumo_Especificacao para SubInsumo_Especificacao
+                        <br />
+                        - Conversão de Insumo_ItemObsoleto para INSUMO_ITEMOBSOLETO
                       </p>
                       <input
                         type="file"
-                        accept=".xlsx"
+                        accept=".xlsx, .csv"
                         onChange={handleFileChange}
                         className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none"
                       />

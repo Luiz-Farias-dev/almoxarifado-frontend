@@ -1,48 +1,63 @@
 import api from "./axios";
 
-interface CostCenterProps {
+/** ========================================================================
+ * Tipos/Interfaces
+ * ======================================================================== */
+export interface CostCenterProps {
   Centro_Negocio_Cod: string;
   Centro_Nome: string;
+  work_id?: number; // pode não vir em algumas respostas (ex.: JSONB minimal no envio)
 }
 
+export interface CentrosCustoProps {
+  Centro_Negocio_Cod: string;
+  Centro_Nome: string;
+  work_id: number;
+}
+
+/** ========================================================================
+ * Autenticação (backend TypeScript: POST /login → { token })
+ * ======================================================================== */
 export const login = async (cpf: string, senha: string) => {
-  const response = await api.post("/login/", { cpf, senha });
+  const response = await api.post("/login", { cpf, senha });
   return response;
 };
 
-// Adicionar funcionário individual
+// Backend não expõe estes endpoints; mantidos para quando forem implementados
 export const addEmployee = async (data: any) => {
   const response = await api.post("/upload-funcionario/", data);
   return response.data;
 };
 
-// Adicionar arquivo com vários funcionários
 export const addEmployeesFile = async (file: FormData) => {
   const response = await api.post("/upload-funcionarios/", file, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+    headers: { "Content-Type": "multipart/form-data" },
   });
   return response.data;
 };
 
-// Adicionar arquivo com vários produtos
+/** ========================================================================
+ * Catálogo de Produtos (backend: GET /insumos, POST /insumo, POST /insumos)
+ * ======================================================================== */
 export const addProductsFile = async (file: FormData) => {
-  const response = await api.post("/upload-produtos-catalogo/", file, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+  const response = await api.post("/insumos", file, {
+    headers: { "Content-Type": "multipart/form-data" },
   });
   return response.data;
 };
 
-// Adicionar produto unitário
-export const addProduct = async (data: any) => {
-  const response = await api.post("/upload-produto-catalogo/", data);
+export const addProduct = async (data: {
+  Insumo_Cod: number;
+  SubInsumo_Cod?: number | null;
+  Unid_Cod: string;
+  SubInsumo_Especificacao: string;
+  INSUMO_ITEMOBSOLETO?: string;
+  descricao?: string;
+}) => {
+  const response = await api.post("/insumo", data);
   return response.data;
 };
 
-// Buscar todos os produtos
 interface GetProductsParams {
   skip?: number;
   limit?: number;
@@ -53,14 +68,17 @@ interface GetProductsParams {
   INSUMO_ITEMOBSOLETO?: string;
   nome_produto?: string;
 }
-export const getProducts = async (params: GetProductsParams) => {
-  const response = await api.get("/catalogo-produtos/", {
-    params,
-  });
-  return response.data;
+
+export const getProducts = async (_params?: GetProductsParams) => {
+  const response = await api.get("/insumos");
+  const data = response.data;
+  const list = Array.isArray(data) ? data : data?.data ?? [];
+  return list;
 };
 
-// Lista de Espera
+/** ========================================================================
+ * Lista de Espera (backend: POST/GET/DELETE /lista-espera, auth obrigatória)
+ * ======================================================================== */
 interface WaitingListProps {
   almoxarife_nome: string | undefined;
   destino: string;
@@ -74,26 +92,30 @@ interface WaitingListProps {
   }[];
 }
 export const addProductToWaitingList = async (data: WaitingListProps) => {
-  const response = await api.post("/lista-espera/", data);
+  const response = await api.post("/lista-espera", data);
   return response.data;
 };
 
 interface GetWaitingListParams {
   skip?: number;
   limit?: number;
-  codigo_pedido?: string;
+  codigo_pedido?: string | number;
   destino?: string;
   SubInsumo_Especificacao?: string;
   centro_custo?: string;
+  work_id?: number;
 }
 export const getWaitingList = async (params: GetWaitingListParams) => {
-  const response = await api.get("/lista-espera/", {
-    params,
-  });
+  const query: Record<string, string | number | undefined> = { ...params };
+  if (params.codigo_pedido !== undefined) {
+    query.codigo_pedido = typeof params.codigo_pedido === "string"
+      ? parseInt(params.codigo_pedido, 10)
+      : params.codigo_pedido;
+  }
+  const response = await api.get("/lista-espera", { params: query });
   return response.data;
 };
 
-// Remove produto da lista de espera (versão atualizada)
 export const removeProductFromWaitingList = async (
   codigo_pedido: string,
   Insumo_Cod: number,
@@ -105,7 +127,9 @@ export const removeProductFromWaitingList = async (
   return response.data;
 };
 
-// Tabela Final
+/** ========================================================================
+ * Tabela Final (backend: POST /tabela-final, auth obrigatória)
+ * ======================================================================== */
 interface FinalTableProps {
   cpf: string;
   produtos: {
@@ -119,11 +143,13 @@ interface FinalTableProps {
   }[];
 }
 export const addProductToFinalTable = async (data: FinalTableProps) => {
-  const response = await api.post("/tabela-final/", data);
+  const response = await api.post("/tabela-final", data);
   return response.data;
 };
 
-// Chegada Produtos
+/** ========================================================================
+ * Chegada de Produtos (Entrada) / Acurácia de Estoque
+ * ======================================================================== */
 interface ArrivalProductstProps {
   nome_funcionario?: string;
   observacao?: string | null;
@@ -142,7 +168,6 @@ export const addProductToArrivalProducts = async (
   return response.data;
 };
 
-// Acurácia de Estoque
 interface InventoryAccuracyProps {
   nome_funcionario?: string;
   produtos: {
@@ -160,93 +185,162 @@ export const addProductToInventoryAccuracy = async (
   return response.data;
 };
 
-// Gerar Relatório
+/** ========================================================================
+ * Relatórios
+ * ======================================================================== */
 export const generateReport = async (
   data_inicio: string,
   data_fim: string,
   tabela: string
 ) => {
   const response = await api.get("/gerar-relatorio/", {
-    headers: {
-      "Content-Type": "application/json",
-    },
-    params: {
-      data_inicio,
-      data_fim,
-      tabela,
-    },
+    headers: { "Content-Type": "application/json" },
+    params: { data_inicio, data_fim, tabela },
     responseType: "blob",
   });
   return response;
 };
 
-// ===========================================
-// ENDPOINTS PARA OBRAS E CENTROS DE CUSTO
-// ===========================================
-
-//Prop de centro de custo
-export interface CentrosCustoProps {
-  Centro_Negocio_Cod: string;
-  Centro_Nome: string;
+/** ========================================================================
+ * Associação Funcionário ↔ Centros de Custo (admin/config)
+ * ======================================================================== */
+interface FuncionarioCentroCustoCreate {
+  centros_custo_cod: string[];
+  // compatível com novo modelo: obra na associação (opcional para manter retrocompatibilidade)
+  obra_id?: number;
 }
-// Pegar todos os centros de custo
-export const getAllCostCenter = async (
-  obraId?: number | null
-): Promise<CentrosCustoProps[]> => {
+
+/**
+ * Associar centros de custo a um funcionário (opcionalmente para uma obra específica)
+ */
+export const associarCentrosCustoFuncionario = async (
+  funcionarioId: number,
+  centrosCustoCod: string[],
+  obraId?: number
+): Promise<void> => {
+  const data: FuncionarioCentroCustoCreate = {
+    centros_custo_cod: centrosCustoCod,
+    ...(obraId ? { obra_id: obraId } : {}),
+  };
+  await api.post(`/funcionarios/${funcionarioId}/centros-custo`, data);
+};
+
+/**
+ * Listar centros de custo associados a um funcionário (opcional filtro por obra)
+ */
+export const listarCentrosCustoFuncionario = async (
+  funcionarioId: number,
+  obraId?: number
+): Promise<CostCenterProps[]> => {
   const params: Record<string, any> = {};
   if (obraId) params.obra_id = obraId;
+  const response = await api.get(
+    `/funcionarios/${funcionarioId}/centros-custo`,
+    {
+      params,
+    }
+  );
+  return response.data;
+};
 
+/**
+ * Remover centro de custo de um funcionário (opcional obra como query)
+ */
+export const removerCentroCustoFuncionario = async (
+  funcionarioId: number,
+  centroCod: string,
+  obraId?: number
+): Promise<void> => {
+  const params: Record<string, any> = {};
+  if (obraId) params.obra_id = obraId;
+  await api.delete(
+    `/funcionarios/${funcionarioId}/centros-custo/${centroCod}`,
+    {
+      params,
+    }
+  );
+};
+
+/** ========================================================================
+ * Obras e Centros de Custo (backend: /centroCusto, /obra)
+ * ======================================================================== */
+
+type BackendCentroCustoItem = { id: number; nome: string; Centro_Negocio_Cod?: string; Centro_Nome?: string; work_id?: number };
+
+function normalizeCentroCusto(item: BackendCentroCustoItem): CentrosCustoProps {
+  return {
+    Centro_Negocio_Cod: item.Centro_Negocio_Cod ?? String(item.id),
+    Centro_Nome: item.Centro_Nome ?? item.nome,
+    work_id: item.work_id ?? 0,
+  };
+}
+
+export const getUserCostCenters = async (): Promise<CentrosCustoProps[]> => {
   try {
-    const response = await api.get("/cost-center", { params });
-    return response.data;
+    const list = await getAllCostCenter();
+    return list;
   } catch (error) {
-    console.error("Erro ao buscar centros de custo:", error);
-    throw new Error("Falha ao carregar centros de custo");
+    console.error("Erro ao buscar centros de custo do usuário:", error);
+    throw new Error("Falha ao carregar centros de custo do usuário");
   }
 };
 
-// Criar um novo centro de custo
+export const getCostCentersByWork = async (workId: number) => {
+  const list = await getAllCostCenter(workId);
+  return list as { Centro_Negocio_Cod: string; Centro_Nome: string }[];
+};
+
+export const getAllCostCenter = async (
+  _obraId?: number | null
+): Promise<CentrosCustoProps[]> => {
+  const response = await api.get("/centroCusto");
+  const raw = Array.isArray(response.data) ? response.data : [];
+  return raw.map((item: BackendCentroCustoItem) => normalizeCentroCusto(item));
+};
+
 export const addCostCenter = async (data: {
   code: string;
   name: string;
   workId: string;
 }) => {
-  const response = await api.post("/cost-center/", {
-    code: data.code,
-    name: data.name,
-    workId: data.workId,
-  });
+  const response = await api.post("/centroCusto", { nome: data.name });
   return response.data;
 };
 
-// Pegar um centro de custo por código
 export const getCostCenterByCode = async (centroCod: string) => {
-  const response = await api.get(`/cost-center/${centroCod}`);
+  const list = await getAllCostCenter();
+  const found = list.find((c) => c.Centro_Negocio_Cod === centroCod);
+  if (!found) throw new Error("Centro de custo não encontrado");
+  return found;
+};
+
+export const deleteCostCenter = async (centroId: number) => {
+  const response = await api.delete(`/centroCusto/${centroId}`);
   return response.data;
 };
 
-// Deletar um centro de custo
-export const deleteCostCenter = async (centroCod: string) => {
-  const response = await api.delete(`/cost-center/${centroCod}`);
-  return response.data;
-};
+type BackendObraItem = { id: number; nome: string; initials?: string; name?: string };
 
-// Criar uma nova obra
+function normalizeObra(item: BackendObraItem) {
+  return {
+    id: item.id,
+    name: item.name ?? item.nome,
+    initials: item.initials ?? item.nome ?? String(item.id),
+  };
+}
+
 export const addWork = async (data: { initials: string }) => {
-  const response = await api.post("/work/", {
-    initials: data.initials,
-  });
-  return response.data;
+  const response = await api.post("/obra", { nome: data.initials });
+  return normalizeObra((response.data as BackendObraItem) ?? { id: 0, nome: data.initials });
 };
 
-// Pegar todas as obras
 export const getAllWorks = async () => {
-  const response = await api.get("/work/");
-  return response.data;
+  const response = await api.get("/obra");
+  const raw = Array.isArray(response.data) ? response.data : [];
+  return raw.map((item: BackendObraItem) => normalizeObra(item));
 };
 
-// Pegar uma obra por ID
 export const getWorkById = async (workId: number) => {
-  const response = await api.get(`/work/${workId}`);
-  return response.data;
+  const response = await api.get(`/obra/${workId}`);
+  return normalizeObra(response.data as BackendObraItem);
 };
