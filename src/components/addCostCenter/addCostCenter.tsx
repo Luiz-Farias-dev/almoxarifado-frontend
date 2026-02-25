@@ -22,7 +22,7 @@ const AddCostCenter = () => {
   
   // Estado para o formulário de Obra
   const [workForm, setWorkForm] = useState({
-    initials: ""
+    name: ""
   });
   
   // Lista de obras (agora carregada da API)
@@ -56,7 +56,7 @@ const AddCostCenter = () => {
   };
 
   const handleWorkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setWorkForm({ initials: e.target.value });
+    setWorkForm({ name: e.target.value });
   };
 
   const handleCostCenterSubmit = async (e: React.FormEvent) => {
@@ -91,7 +91,7 @@ const AddCostCenter = () => {
     e.preventDefault();
     
     // Validar tamanho do nome
-    if (workForm.initials.length < 3 || workForm.initials.length > 10) {
+    if (workForm.name.length < 3 || workForm.name.length > 10) {
       handleWarningToast("O nome deve ter entre 3 e 10 caracteres");
       setLoadingWork(false);
       return;
@@ -99,14 +99,14 @@ const AddCostCenter = () => {
     
     try {
       const response = await addWork({
-        initials: workForm.initials
+        name: workForm.name
       });
       
       handleSuccessToast("Obra cadastrada com sucesso!");
       
       // Atualizar a lista de obras com a nova obra cadastrada da API
       setWorks([...works, response]);
-      setWorkForm({ initials: "" });
+      setWorkForm({ name: "" });
     } catch (error: any) {
       if (error.response && error.response.status === 400) {
         handleWarningToast("Obra já cadastrada.");
@@ -211,7 +211,7 @@ const AddCostCenter = () => {
                         <option value="">Selecione uma obra</option>
                         {works.map(work => (
                           <option key={work.id} value={work.id}>
-                            {work.initials} - {work.name}
+                            {work.initials ? `${work.initials} - ${work.name}` : work.name}
                           </option>
                         ))}
                       </select>
@@ -245,14 +245,14 @@ const AddCostCenter = () => {
               <AccordionContent className="pt-4 pb-6">
                 <form onSubmit={handleWorkSubmit} className="space-y-6">
                   <div>
-                    <label htmlFor="initials" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                       Nome da Obra
                     </label>
                     <input
                       type="text"
-                      id="initials"
-                      name="initials"
-                      value={workForm.initials}
+                      id="name"
+                      name="name"
+                      value={workForm.name}
                       onChange={handleWorkChange}
                       className="w-full p-2.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       placeholder="Ex: OBRA4"
@@ -266,11 +266,11 @@ const AddCostCenter = () => {
                   <button
                     type="submit"
                     className={`w-full py-3 px-4 text-white font-medium rounded-xl shadow-sm focus:outline-none flex items-center justify-center ${
-                      workForm.initials && workForm.initials.length >= 3 && workForm.initials.length <= 10
+                      workForm.name && workForm.name.length >= 3 && workForm.name.length <= 10
                         ? "bg-green-600 hover:bg-green-700"
                         : "bg-gray-400 cursor-not-allowed"
                     } transition-colors duration-200`}
-                    disabled={!workForm.initials || workForm.initials.length < 3 || workForm.initials.length > 10 || loadingWork}
+                    disabled={!workForm.name || workForm.name.length < 3 || workForm.name.length > 10 || loadingWork}
                   >
                     {loadingWork ? (
                       <LoadingSpinner message="Cadastrando..." />

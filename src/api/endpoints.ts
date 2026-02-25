@@ -319,19 +319,19 @@ export const deleteCostCenter = async (centroId: number) => {
   return response.data;
 };
 
-type BackendObraItem = { id: number; nome: string; initials?: string; name?: string };
+type BackendObraItem = { id: number; nome?: string; initials?: string | null; name?: string };
 
 function normalizeObra(item: BackendObraItem) {
   return {
     id: item.id,
-    name: item.name ?? item.nome,
-    initials: item.initials ?? item.nome ?? String(item.id),
+    name: item.name ?? item.nome ?? String(item.id),
+    initials: item.initials ?? null,
   };
 }
 
-export const addWork = async (data: { initials: string }) => {
-  const response = await api.post("/obra", { nome: data.initials });
-  return normalizeObra((response.data as BackendObraItem) ?? { id: 0, nome: data.initials });
+export const addWork = async (data: { name: string }) => {
+  const response = await api.post("/obra", { name: data.name });
+  return normalizeObra((response.data as BackendObraItem) ?? { id: 0, name: data.name });
 };
 
 export const getAllWorks = async () => {
