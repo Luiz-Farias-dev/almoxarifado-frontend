@@ -72,7 +72,7 @@ interface GetProductsParams {
 export const getProducts = async (_params?: GetProductsParams) => {
   const response = await api.get("/insumos");
   const data = response.data;
-  const list = Array.isArray(data) ? data : data?.data ?? [];
+  const list = Array.isArray(data) ? data : (data?.data ?? []);
   return list;
 };
 
@@ -108,9 +108,10 @@ interface GetWaitingListParams {
 export const getWaitingList = async (params: GetWaitingListParams) => {
   const query: Record<string, string | number | undefined> = { ...params };
   if (params.codigo_pedido !== undefined) {
-    query.codigo_pedido = typeof params.codigo_pedido === "string"
-      ? parseInt(params.codigo_pedido, 10)
-      : params.codigo_pedido;
+    query.codigo_pedido =
+      typeof params.codigo_pedido === "string"
+        ? parseInt(params.codigo_pedido, 10)
+        : params.codigo_pedido;
   }
   const response = await api.get("/lista-espera", { params: query });
   return response.data;
@@ -119,10 +120,10 @@ export const getWaitingList = async (params: GetWaitingListParams) => {
 export const removeProductFromWaitingList = async (
   codigo_pedido: string,
   Insumo_Cod: number,
-  SubInsumo_Cod: number
+  SubInsumo_Cod: number,
 ) => {
   const response = await api.delete(
-    `/lista-espera/${codigo_pedido}/${Insumo_Cod}/${SubInsumo_Cod}`
+    `/lista-espera/${codigo_pedido}/${Insumo_Cod}/${SubInsumo_Cod}`,
   );
   return response.data;
 };
@@ -162,7 +163,7 @@ interface ArrivalProductstProps {
   }[];
 }
 export const addProductToArrivalProducts = async (
-  data: ArrivalProductstProps
+  data: ArrivalProductstProps,
 ) => {
   const response = await api.post("/chegada-produtos/", data);
   return response.data;
@@ -179,7 +180,7 @@ interface InventoryAccuracyProps {
   }[];
 }
 export const addProductToInventoryAccuracy = async (
-  data: InventoryAccuracyProps
+  data: InventoryAccuracyProps,
 ) => {
   const response = await api.post("/acuracia-estoque/", data);
   return response.data;
@@ -191,7 +192,7 @@ export const addProductToInventoryAccuracy = async (
 export const generateReport = async (
   data_inicio: string,
   data_fim: string,
-  tabela: string
+  tabela: string,
 ) => {
   const response = await api.get("/gerar-relatorio/", {
     headers: { "Content-Type": "application/json" },
@@ -216,7 +217,7 @@ interface FuncionarioCentroCustoCreate {
 export const associarCentrosCustoFuncionario = async (
   funcionarioId: number,
   centrosCustoCod: string[],
-  obraId?: number
+  obraId?: number,
 ): Promise<void> => {
   const data: FuncionarioCentroCustoCreate = {
     centros_custo_cod: centrosCustoCod,
@@ -230,7 +231,7 @@ export const associarCentrosCustoFuncionario = async (
  */
 export const listarCentrosCustoFuncionario = async (
   funcionarioId: number,
-  obraId?: number
+  obraId?: number,
 ): Promise<CostCenterProps[]> => {
   const params: Record<string, any> = {};
   if (obraId) params.obra_id = obraId;
@@ -238,7 +239,7 @@ export const listarCentrosCustoFuncionario = async (
     `/funcionarios/${funcionarioId}/centros-custo`,
     {
       params,
-    }
+    },
   );
   return response.data;
 };
@@ -249,7 +250,7 @@ export const listarCentrosCustoFuncionario = async (
 export const removerCentroCustoFuncionario = async (
   funcionarioId: number,
   centroCod: string,
-  obraId?: number
+  obraId?: number,
 ): Promise<void> => {
   const params: Record<string, any> = {};
   if (obraId) params.obra_id = obraId;
@@ -257,7 +258,7 @@ export const removerCentroCustoFuncionario = async (
     `/funcionarios/${funcionarioId}/centros-custo/${centroCod}`,
     {
       params,
-    }
+    },
   );
 };
 
@@ -265,7 +266,13 @@ export const removerCentroCustoFuncionario = async (
  * Obras e Centros de Custo (backend: /centroCusto, /obra)
  * ======================================================================== */
 
-type BackendCentroCustoItem = { id: number; nome: string; Centro_Negocio_Cod?: string; Centro_Nome?: string; work_id?: number };
+type BackendCentroCustoItem = {
+  id: number;
+  nome: string;
+  Centro_Negocio_Cod?: string;
+  Centro_Nome?: string;
+  work_id?: number;
+};
 
 function normalizeCentroCusto(item: BackendCentroCustoItem): CentrosCustoProps {
   return {
@@ -285,25 +292,31 @@ export const getUserCostCenters = async (): Promise<CentrosCustoProps[]> => {
   }
 };
 
-export const getCostCentersByWork = async (workId: number) => {
-  const list = await getAllCostCenter(workId);
+export const getCostCentersByWork = async () => {
+  const list = await getAllCostCenter();
   return list as { Centro_Negocio_Cod: string; Centro_Nome: string }[];
 };
 
-export const getAllCostCenter = async (
-  _obraId?: number | null
-): Promise<CentrosCustoProps[]> => {
+export const getAllCostCenter = async (): Promise<CentrosCustoProps[]> => {
   const response = await api.get("/centroCusto");
   const raw = Array.isArray(response.data) ? response.data : [];
   return raw.map((item: BackendCentroCustoItem) => normalizeCentroCusto(item));
 };
 
+/**
+ * Adiciona um novo centro de custo.
+ * @param data Objeto com os campos obrigatórios. work_id deve ser um número (convertido no frontend).
+ */
 export const addCostCenter = async (data: {
-  code: string;
-  name: string;
-  workId: string;
+  Centro_Negocio_Cod: string;
+  Centro_Nome: string;
+  work_id: number; // ajustado para number, pois no componente convertemos para número
 }) => {
-  const response = await api.post("/centroCusto", { nome: data.name });
+  const response = await api.post("/centroCusto", {
+    Centro_Negocio_Cod: data.Centro_Negocio_Cod,
+    Centro_Nome: data.Centro_Nome,
+    work_id: data.work_id,
+  });
   return response.data;
 };
 
@@ -319,19 +332,26 @@ export const deleteCostCenter = async (centroId: number) => {
   return response.data;
 };
 
-type BackendObraItem = { id: number; nome: string; initials?: string; name?: string };
+type BackendObraItem = {
+  id: number;
+  nome?: string;
+  initials?: string | null;
+  name?: string;
+};
 
 function normalizeObra(item: BackendObraItem) {
   return {
     id: item.id,
-    name: item.name ?? item.nome,
-    initials: item.initials ?? item.nome ?? String(item.id),
+    name: item.name ?? item.nome ?? String(item.id),
+    initials: item.initials ?? null,
   };
 }
 
-export const addWork = async (data: { initials: string }) => {
-  const response = await api.post("/obra", { nome: data.initials });
-  return normalizeObra((response.data as BackendObraItem) ?? { id: 0, nome: data.initials });
+export const addWork = async (data: { name: string }) => {
+  const response = await api.post("/obra", { name: data.name });
+  return normalizeObra(
+    (response.data as BackendObraItem) ?? { id: 0, name: data.name },
+  );
 };
 
 export const getAllWorks = async () => {
