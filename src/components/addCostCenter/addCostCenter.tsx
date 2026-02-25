@@ -12,23 +12,23 @@ import Header from "../Header";
 
 const AddCostCenter = () => {
   const { toast } = useToast();
-  
-  // Estado para o formulário de Centro de Custo
+
+  // Estado para o formulário de Centro de Custo (nomes iguais aos do backend)
   const [costCenterForm, setCostCenterForm] = useState({
-    code: "",
-    name: "",
-    workId: ""
+    Centro_Negocio_Cod: "",
+    Centro_Nome: "",
+    work_id: ""
   });
-  
+
   // Estado para o formulário de Obra
   const [workForm, setWorkForm] = useState({
     name: ""
   });
-  
-  // Lista de obras (agora carregada da API)
+
+  // Lista de obras
   const [works, setWorks] = useState<any[]>([]);
   const [loadingWorks, setLoadingWorks] = useState(true);
-  
+
   const [loadingCostCenter, setLoadingCostCenter] = useState(false);
   const [loadingWork, setLoadingWork] = useState(false);
 
@@ -46,7 +46,7 @@ const AddCostCenter = () => {
         setLoadingWorks(false);
       }
     };
-    
+
     fetchWorks();
   }, []);
 
@@ -62,19 +62,19 @@ const AddCostCenter = () => {
   const handleCostCenterSubmit = async (e: React.FormEvent) => {
     setLoadingCostCenter(true);
     e.preventDefault();
-    
+
     try {
-      // Converter workId para número
-      const workId = costCenterForm.workId;
-      
+      // Converte work_id para número (caso o backend espere número)
+      const workIdNumber = Number(costCenterForm.work_id);
+
       await addCostCenter({
-        code: costCenterForm.code,
-        name: costCenterForm.name,
-        workId: workId
+        Centro_Negocio_Cod: costCenterForm.Centro_Negocio_Cod,
+        Centro_Nome: costCenterForm.Centro_Nome,
+        work_id: workIdNumber
       });
-      
+
       handleSuccessToast("Centro de custo cadastrado com sucesso!");
-      setCostCenterForm({ code: "", name: "", workId: "" });
+      setCostCenterForm({ Centro_Negocio_Cod: "", Centro_Nome: "", work_id: "" });
     } catch (error: any) {
       if (error.response && error.response.status === 400) {
         handleWarningToast("Centro de custo já cadastrado.");
@@ -89,22 +89,22 @@ const AddCostCenter = () => {
   const handleWorkSubmit = async (e: React.FormEvent) => {
     setLoadingWork(true);
     e.preventDefault();
-    
+
     // Validar tamanho do nome
     if (workForm.name.length < 3 || workForm.name.length > 10) {
       handleWarningToast("O nome deve ter entre 3 e 10 caracteres");
       setLoadingWork(false);
       return;
     }
-    
+
     try {
       const response = await addWork({
         name: workForm.name
       });
-      
+
       handleSuccessToast("Obra cadastrada com sucesso!");
-      
-      // Atualizar a lista de obras com a nova obra cadastrada da API
+
+      // Atualizar a lista de obras com a nova obra cadastrada
       setWorks([...works, response]);
       setWorkForm({ name: "" });
     } catch (error: any) {
@@ -125,7 +125,7 @@ const AddCostCenter = () => {
       description: message,
     });
   };
-  
+
   const handleWarningToast = (message: string) => {
     toast({
       variant: "warning",
@@ -133,7 +133,7 @@ const AddCostCenter = () => {
       description: message,
     });
   };
-  
+
   const handleFailToast = (message: string) => {
     toast({
       variant: "destructive",
@@ -150,7 +150,7 @@ const AddCostCenter = () => {
           <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">
             Cadastro de Centros de Custo e Obras
           </h1>
-          
+
           <Accordion type="multiple" className="w-full" defaultValue={["item-1"]}>
             {/* Accordion para Cadastrar Centro de Custo */}
             <AccordionItem value="item-1" className="border-b border-gray-200">
@@ -160,39 +160,39 @@ const AddCostCenter = () => {
               <AccordionContent className="pt-4 pb-6">
                 <form onSubmit={handleCostCenterSubmit} className="space-y-4">
                   <div>
-                    <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="Centro_Negocio_Cod" className="block text-sm font-medium text-gray-700 mb-1">
                       Código do Centro de Custo
                     </label>
                     <input
                       type="text"
-                      id="code"
-                      name="code"
-                      value={costCenterForm.code}
+                      id="Centro_Negocio_Cod"
+                      name="Centro_Negocio_Cod"
+                      value={costCenterForm.Centro_Negocio_Cod}
                       onChange={handleCostCenterChange}
                       className="w-full p-2.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Ex: CTZ.00.0000"
                       required
                     />
                   </div>
-                  
+
                   <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="Centro_Nome" className="block text-sm font-medium text-gray-700 mb-1">
                       Nome do Centro de Custo
                     </label>
                     <input
                       type="text"
-                      id="name"
-                      name="name"
-                      value={costCenterForm.name}
+                      id="Centro_Nome"
+                      name="Centro_Nome"
+                      value={costCenterForm.Centro_Nome}
                       onChange={handleCostCenterChange}
                       className="w-full p-2.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Ex: Solar RMT"
                       required
                     />
                   </div>
-                  
+
                   <div>
-                    <label htmlFor="workId" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="work_id" className="block text-sm font-medium text-gray-700 mb-1">
                       Escolher Obra
                     </label>
                     {loadingWorks ? (
@@ -201,9 +201,9 @@ const AddCostCenter = () => {
                       </div>
                     ) : (
                       <select
-                        id="workId"
-                        name="workId"
-                        value={costCenterForm.workId}
+                        id="work_id"
+                        name="work_id"
+                        value={costCenterForm.work_id}
                         onChange={handleCostCenterChange}
                         className="w-full p-2.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                         required
@@ -217,15 +217,15 @@ const AddCostCenter = () => {
                       </select>
                     )}
                   </div>
-                  
+
                   <button
                     type="submit"
                     className={`w-full py-3 px-4 text-white font-medium rounded-xl shadow-sm focus:outline-none flex items-center justify-center ${
-                      costCenterForm.code && costCenterForm.name && costCenterForm.workId
+                      costCenterForm.Centro_Negocio_Cod && costCenterForm.Centro_Nome && costCenterForm.work_id
                         ? "bg-blue-600 hover:bg-blue-700"
                         : "bg-gray-400 cursor-not-allowed"
                     } transition-colors duration-200`}
-                    disabled={!costCenterForm.code || !costCenterForm.name || !costCenterForm.workId || loadingCostCenter}
+                    disabled={!costCenterForm.Centro_Negocio_Cod || !costCenterForm.Centro_Nome || !costCenterForm.work_id || loadingCostCenter}
                   >
                     {loadingCostCenter ? (
                       <LoadingSpinner message="Cadastrando..." />
@@ -245,12 +245,12 @@ const AddCostCenter = () => {
               <AccordionContent className="pt-4 pb-6">
                 <form onSubmit={handleWorkSubmit} className="space-y-6">
                   <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="work_name" className="block text-sm font-medium text-gray-700 mb-1">
                       Nome da Obra
                     </label>
                     <input
                       type="text"
-                      id="name"
+                      id="work_name"
                       name="name"
                       value={workForm.name}
                       onChange={handleWorkChange}
@@ -262,7 +262,7 @@ const AddCostCenter = () => {
                       O nome deve ter de 3 a 10 caracteres
                     </p>
                   </div>
-                  
+
                   <button
                     type="submit"
                     className={`w-full py-3 px-4 text-white font-medium rounded-xl shadow-sm focus:outline-none flex items-center justify-center ${
@@ -282,13 +282,13 @@ const AddCostCenter = () => {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-          
+
           <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
             <h3 className="text-sm font-semibold text-blue-800 mb-2">Informações importantes</h3>
             <ul className="text-xs text-blue-700 space-y-1">
               <li>• O código do centro de custo deve ser único</li>
               <li>• O nome da obra deve ter entre 3 e 10 caracteres</li>
-              <li>• Após cadastrar uma obra, ela estará disponível na opção "Selecione uma obra" na aba "Cadastar Centro de Custo"</li>
+              <li>• Após cadastrar uma obra, ela estará disponível na opção "Selecione uma obra" na aba "Cadastrar Centro de Custo"</li>
             </ul>
           </div>
         </div>
