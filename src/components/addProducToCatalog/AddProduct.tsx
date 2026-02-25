@@ -27,29 +27,45 @@ const AddProductPage = () => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = e.target.files?.[0] || null;
     setFile(uploadedFile);
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
-    setLoadingForm(true);
     e.preventDefault();
+    setLoadingForm(true);
+
+    // Validação de tamanho máximo (50 caracteres)
+    if (formData.Insumo_Cod.length > 50) {
+      handleWarningToast("Código do insumo deve ter no máximo 50 caracteres.");
+      setLoadingForm(false);
+      return;
+    }
+    if (formData.SubInsumo_Cod.length > 50) {
+      handleWarningToast("Código do subinsumo deve ter no máximo 50 caracteres.");
+      setLoadingForm(false);
+      return;
+    }
+
     try {
+      // Envia os valores como string (sem conversão para número)
       await addProduct({
-        SubInsumo_Especificacao: formData.SubInsumo_Especificacao,
         Insumo_Cod: formData.Insumo_Cod,
         SubInsumo_Cod: formData.SubInsumo_Cod,
         Unid_Cod: formData.Unid_Cod,
+        SubInsumo_Especificacao: formData.SubInsumo_Especificacao,
         INSUMO_ITEMOBSOLETO: formData.INSUMO_ITEMOBSOLETO
       });
+
       handleSuccessToast("Produto adicionado com sucesso!");
       setFormData({
-        SubInsumo_Especificacao: "",
         Insumo_Cod: "",
-        SubInsumo_Cod:"",
+        SubInsumo_Cod: "",
+        SubInsumo_Especificacao: "",
         Unid_Cod: "",
-        INSUMO_ITEMOBSOLETO:"N"
+        INSUMO_ITEMOBSOLETO: "N"
       });
     } catch (error: any) {
       if (error.response && error.response.status === 400) {
@@ -63,22 +79,29 @@ const AddProductPage = () => {
   };
 
   const handleFileSubmit = async (e: React.FormEvent) => {
-    setLoadingFile(true);
     e.preventDefault();
+    setLoadingFile(true);
+
     if (!file) {
       handleFailToast("Selecione um arquivo para enviar.");
+      setLoadingFile(false);
       return;
     }
+
     const formData = new FormData();
     formData.append("file", file);
+
     try {
       await addProductsFile(formData);
       handleSuccessToast("Arquivo enviado com sucesso!");
       setFile(null);
+      const fileInput = document.getElementById("file-upload") as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
     } catch (error: any) {
       if (error.response?.status === 400) {
         const raw = error.response.data?.error ?? error.response.data?.detail ?? "Erro no envio.";
         const errorDetail = typeof raw === "string" ? raw : JSON.stringify(raw);
+
         if (errorDetail.includes("Colunas obrigatórias faltando")) {
           handleWarningToast(errorDetail);
           return;
@@ -95,8 +118,7 @@ const AddProductPage = () => {
           handleWarningToast("Formato de colunas incorreto. Verifique as instruções acima.");
           return;
         }
-        
-        // Mensagem genérica para outros erros 400
+
         handleWarningToast(errorDetail || "Erro no formato do arquivo.");
         return;
       }
@@ -113,6 +135,7 @@ const AddProductPage = () => {
       description: message,
     });
   };
+
   const handleWarningToast = (message: string) => {
     toast({
       variant: "warning",
@@ -120,6 +143,7 @@ const AddProductPage = () => {
       description: message,
     });
   };
+
   const handleFailToast = (message: string) => {
     toast({
       variant: "destructive",
@@ -140,7 +164,6 @@ const AddProductPage = () => {
             <AccordionItem value="item-1">
               <AccordionTrigger>Adicionar Produto Individual</AccordionTrigger>
               <AccordionContent>
-                {/* Formulário para adicionar produto individualmente */}
                 <form onSubmit={handleFormSubmit} className="space-y-4">
                   <div>
                     <label
@@ -156,7 +179,8 @@ const AddProductPage = () => {
                       value={formData.Insumo_Cod}
                       onChange={handleChange}
                       className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Informe o código do insumo"
+                      placeholder="Ex: 12345"
+                      maxLength={50}
                       required
                     />
                   </div>
@@ -174,7 +198,8 @@ const AddProductPage = () => {
                       value={formData.SubInsumo_Cod}
                       onChange={handleChange}
                       className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Informe o código do subinsumo"
+                      placeholder="Ex: 67890"
+                      maxLength={50}
                       required
                     />
                   </div>
@@ -192,7 +217,7 @@ const AddProductPage = () => {
                       value={formData.Unid_Cod}
                       onChange={handleChange}
                       className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Informe a unidade de medida"
+                      placeholder="Ex: UN, KG, M"
                       required
                     />
                   </div>
@@ -210,7 +235,7 @@ const AddProductPage = () => {
                       value={formData.SubInsumo_Especificacao}
                       onChange={handleChange}
                       className="mt-1 block w-full p-2 border border-gray-300 rounded-2xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Informe a especificação do subinsumo"
+                      placeholder="Descrição detalhada"
                       required
                     />
                   </div>
@@ -233,9 +258,7 @@ const AddProductPage = () => {
                     }
                   >
                     {loadingForm ? (
-                      <>
-                        <LoadingSpinner message="Enviando..." />
-                      </>
+                      <LoadingSpinner message="Enviando..." />
                     ) : (
                       "Adicionar Produto"
                     )}
@@ -247,7 +270,6 @@ const AddProductPage = () => {
             <AccordionItem value="item-2">
               <AccordionTrigger>Adicionar Produtos via Planilha</AccordionTrigger>
               <AccordionContent>
-                {/* Formulário para upload de arquivo */}
                 <div>
                   <h2 className="text-xl font-semibold text-gray-700">
                     Adicionar Produtos via Planilha
@@ -272,6 +294,7 @@ const AddProductPage = () => {
                         - Conversão de Insumo_ItemObsoleto para INSUMO_ITEMOBSOLETO
                       </p>
                       <input
+                        id="file-upload"
                         type="file"
                         accept=".xlsx, .csv"
                         onChange={handleFileChange}
@@ -288,9 +311,7 @@ const AddProductPage = () => {
                       disabled={!file || loadingFile}
                     >
                       {loadingFile ? (
-                        <>
-                          <LoadingSpinner message="Enviando..." />
-                        </>
+                        <LoadingSpinner message="Enviando..." />
                       ) : (
                         "Upload de Arquivo"
                       )}
