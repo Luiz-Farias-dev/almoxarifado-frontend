@@ -47,8 +47,8 @@ export const addProductsFile = async (file: FormData) => {
 };
 
 export const addProduct = async (data: {
-  Insumo_Cod: number;
-  SubInsumo_Cod?: number | null;
+  Insumo_Cod: string; // Alterado para string
+  SubInsumo_Cod: string; // Alterado para string
   Unid_Cod: string;
   SubInsumo_Especificacao: string;
   INSUMO_ITEMOBSOLETO?: string;
@@ -61,8 +61,8 @@ export const addProduct = async (data: {
 interface GetProductsParams {
   skip?: number;
   limit?: number;
-  Insumo_Cod?: number;
-  SubInsumo_Cod?: number;
+  Insumo_Cod?: string; // Alterado para string
+  SubInsumo_Cod?: string; // Alterado para string
   Unid_Cod?: string;
   SubInsumo_Especificacao?: string;
   INSUMO_ITEMOBSOLETO?: string;
@@ -84,7 +84,7 @@ interface WaitingListProps {
   destino: string;
   centro_custo: CostCenterProps;
   produtos: {
-    Insumo_Cod: number;
+    Insumo_Cod: number; // Mantido como number (consistente com o uso)
     SubInsumo_Cod: number;
     SubInsumo_Especificacao: string;
     quantidade: number;
