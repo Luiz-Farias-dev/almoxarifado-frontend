@@ -29,8 +29,8 @@ describe("isValidCPF", () => {
   });
 
   it("accepts another known valid CPF", () => {
-    // 347.066.120-98
-    expect(isValidCPF("34706612098")).toBe(true);
+    // 347.066.120-04
+    expect(isValidCPF("34706612004")).toBe(true);
   });
 });
 
